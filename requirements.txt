@@ -1,0 +1,13 @@
+django
+djangorestframework
+django-cors-headers
+celery
+redis
+pycryptodome
+cryptography
+python-dotenv
+boto3
+django-celery-beat
+django-celery-results
+pyjwt
+bcrypt

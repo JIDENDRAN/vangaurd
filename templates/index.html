@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VANGUARD | Time-Bound Crypto-Protection</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div id="login-overlay" class="login-overlay">
+        <div class="panel login-box">
+            <h1 class="logo" style="text-align: center; margin-bottom: 2rem;">VANGUARD</h1>
+            <p style="text-align: center; color: var(--text-dim); margin-bottom: 1.5rem;">SECURE PROTOCOL ACCESS</p>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="USERNAME" required>
+                <input type="password" id="password" placeholder="PASSWORD" required>
+                <button type="submit" class="btn" style="width: 100%;">AUTHORIZE</button>
+            </form>
+            <p id="login-error" style="color: var(--danger); margin-top: 1rem; text-align: center;"></p>
+        </div>
+    </div>
+
+    <div class="hud-container hidden" id="main-hud">
+        <header>
+            <div>
+                <h1 class="logo">VANGUARD SYSTEM</h1>
+                <p style="font-size: 0.8rem; color: var(--primary-lime);">[ STATUS: SECURE / ENCRYPTED ]</p>
+            </div>
+            <div style="text-align: right;">
+                <p id="user-display" style="color: var(--primary-cyan); font-weight: bold;"></p>
+                <a href="#" id="logout-btn" style="color: var(--danger); font-size: 0.8rem;">DISCONNECT</a>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Upload Panel -->
+            <div class="panel">
+                <h3><span class="pulse">●</span> SECURE UPLOAD</h3>
+                <p style="color: var(--text-dim); margin-bottom: 1rem; font-size: 0.8rem;">AES-256-GCM LOCAL ENCRYPTION
+                </p>
+                <form id="upload-form">
+                    <input type="file" id="file-input" required>
+                    <div style="display: flex; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.7rem; color: var(--text-dim);">TTL (HOURS)</label>
+                            <input type="number" id="ttl-input" value="24" min="1">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: var(--text-dim);">ACCESS LIMIT</label>
+                            <input type="number" id="limit-input" value="0" min="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%;">ENCRYPT & UPLOAD</button>
+                </form>
+                <div id="upload-status" style="margin-top: 1rem; font-size: 0.8rem;"></div>
+            </div>
+
+            <!-- Stats/Global Panel -->
+            <div class="panel">
+                <h3>SYSTEM METRICS</h3>
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <div>
+                        <p style="color: var(--text-dim); font-size: 0.7rem;">PROTECTED FILES</p>
+                        <h2 id="total-files">0</h2>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-dim); font-size: 0.7rem;">EXPIRED/ERASED</p>
+                        <h2 id="expired-files" style="color: var(--danger);">0</h2>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn" style="width: 100%; border-color: var(--warning); color: var(--warning);"
+                        onclick="showEmergency()">EMERGENCY OVERRIDE</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top: 1rem;">
+            <!-- File List -->
+            <div class="panel">
+                <h3>ACTIVE VAULT</h3>
+                <div id="file-list" style="margin-top: 1rem;">
+                    <!-- Files will be injected here -->
+                    <p style="color: var(--text-dim);">Scanning for active payloads...</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Authorization Queue (Admin Only) -->
+                <div id="admin-queue" class="panel hidden">
+                    <h3><span class="pulse" style="background: var(--warning);">●</span> AUTH QUEUE</h3>
+                    <div id="emergency-list" style="margin-top: 1rem; font-size: 0.7rem;">
+                        <p style="color: var(--text-dim);">No pending authorizations.</p>
+                    </div>
+                </div>
+
+                <!-- Audit Trail (Mini) -->
+                <div class="panel">
+                    <h3>AUDIT TRAIL</h3>
+                    <div id="audit-mini"
+                        style="margin-top: 1rem; font-size: 0.7rem; max-height: 300px; overflow-y: auto;">
+                        <!-- Logs will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="emergency-modal" class="login-overlay hidden">
+        <div class="panel" style="width: 500px;">
+            <h3>EMERGENCY ACCESS REQUEST</h3>
+            <p style="margin: 1rem 0; color: var(--text-dim); font-size: 0.8rem;">Dual-authorization required. Reason
+                will be logged in forensic trail.</p>
+            <input type="text" id="target-file-id" placeholder="FILE UUID">
+            <textarea id="emergency-reason" placeholder="JUSTIFICATION FOR ACCESS" rows="4"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="flex: 1;" onclick="submitEmergency()">SUBMIT REQUEST</button>
+                <button class="btn btn-danger" onclick="hideEmergency()">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
