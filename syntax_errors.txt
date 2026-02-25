@@ -1,0 +1,6 @@
+Compilation error in: .\vanguard\management\__init__.py
+SyntaxError: source code string cannot contain null bytes
+
+Compilation error in: .\vanguard\management\commands\__init__.py
+SyntaxError: source code string cannot contain null bytes
+

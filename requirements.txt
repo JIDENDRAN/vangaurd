@@ -11,3 +11,4 @@ django-celery-beat
 django-celery-results
 pyjwt
 bcrypt
+djangorestframework-simplejwt

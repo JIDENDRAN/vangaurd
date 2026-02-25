@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}AUDIT LOG{% endblock %}
+{% block meta_description %}VANGUARD Audit Trail — Forensic event log for compliance and admins{% endblock %}
+{% block nav_audit %}active{% endblock %}
+{% block page_title %}AUDIT TRAIL{% endblock %}
+{% block page_subtitle %}[ FORENSIC EVENT LOG — ADMIN / COMPLIANCE ONLY ]{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <!-- Toolbar -->
+    <div class="vault-toolbar">
+        <div class="vault-filters">
+            <button class="filter-btn active" onclick="setAuditFilter(this,'')">ALL EVENTS</button>
+            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_UPLOAD')">UPLOADS</button>
+            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_DOWNLOAD')">DOWNLOADS</button>
+            <button class="filter-btn" onclick="setAuditFilter(this,'EMERGENCY')">EMERGENCY</button>
+        </div>
+        <input type="text" id="audit-search" placeholder="SEARCH EVENTS..." style="max-width:300px;margin:0;"
+            oninput="filterAudit()">
+    </div>
+
+    <!-- Stats mini row -->
+    <div class="grid grid-4" style="margin:1.5rem 0;">
+        <div class="stat-mini"><span id="stat-total">—</span><br><span class="metric-label">TOTAL EVENTS</span></div>
+        <div class="stat-mini"><span id="stat-uploads" style="color:var(--primary-lime);">—</span><br><span
+                class="metric-label">UPLOADS</span></div>
+        <div class="stat-mini"><span id="stat-downloads" style="color:var(--primary-cyan);">—</span><br><span
+                class="metric-label">DOWNLOADS</span></div>
+        <div class="stat-mini"><span id="stat-emergency" style="color:var(--warning);">—</span><br><span
+                class="metric-label">EMERGENCY</span></div>
+    </div>
+
+    <!-- Full Audit Table -->
+    <div style="overflow-x:auto;">
+        <table class="audit-table" id="audit-full-table">
+            <thead>
+                <tr>
+                    <th>TIMESTAMP</th>
+                    <th>USER</th>
+                    <th>EVENT TYPE</th>
+                    <th>FILE</th>
+                    <th>IP ADDRESS</th>
+                    <th>DETAILS</th>
+                </tr>
+            </thead>
+            <tbody id="audit-body">
+                <tr>
+                    <td colspan="6" style="color:var(--text-dim);text-align:center;padding:2rem;">Loading forensic
+                        records...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Restricted Banner (for non-admins) -->
+    <div id="audit-restricted" class="hidden" style="text-align:center;padding:4rem;color:var(--text-dim);">
+        <div style="font-size:3rem;margin-bottom:1rem;color:var(--danger);">⊘</div>
+        <p style="color:var(--danger);font-family:'Orbitron',sans-serif;letter-spacing:3px;">RESTRICTED ACCESS</p>
+        <p style="margin-top:.5rem;">Audit trail is available to ADMIN and COMPLIANCE roles only.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/audit.js"></script>
+{% endblock %}

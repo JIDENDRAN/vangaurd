@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}EMERGENCY{% endblock %}
+{% block meta_description %}VANGUARD Emergency Override — Request or approve emergency file access{% endblock %}
+{% block nav_emergency %}active{% endblock %}
+{% block page_title %}EMERGENCY OVERRIDE{% endblock %}
+{% block page_subtitle %}[ DUAL-AUTHORIZATION RECOVERY PROTOCOL ]{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <!-- Request Form -->
+    <div class="panel">
+        <h3><span class="pulse" style="color:var(--warning);">●</span> REQUEST EMERGENCY ACCESS</h3>
+        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;">Dual-authorization required. All
+            access attempts are permanently logged in the forensic trail.</p>
+
+        <form id="emergency-form">
+            <label class="field-label">TARGET FILE UUID</label>
+            <input type="text" id="target-file-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+
+            <label class="field-label">JUSTIFICATION</label>
+            <textarea id="emergency-reason" placeholder="Provide a detailed reason for emergency access..."
+                rows="5"></textarea>
+
+            <button type="submit" class="btn btn-full btn-warning" id="emergency-submit-btn">INITIATE EMERGENCY
+                PROTOCOL</button>
+        </form>
+        <div id="emergency-form-status" style="margin-top:1rem;text-align:center;font-size:0.8rem;min-height:1.2em;">
+        </div>
+    </div>
+
+    <!-- Admin Approval Queue -->
+    <div class="panel">
+        <h3><span class="pulse" style="color:var(--warning);">●</span> AUTHORIZATION QUEUE</h3>
+        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;" id="queue-role-msg">Pending requests
+            awaiting dual-authorization approval.</p>
+
+        <div id="emergency-list">
+            <p style="color:var(--text-dim);">Checking queue...</p>
+        </div>
+    </div>
+</div>
+
+<!-- My Requests -->
+<div class="panel" style="margin-top:0;">
+    <h3>MY REQUEST HISTORY</h3>
+    <div style="overflow-x:auto;margin-top:1rem;">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>FILE</th>
+                    <th>REASON</th>
+                    <th>STATUS</th>
+                    <th>SUBMITTED</th>
+                    <th>EXPIRES</th>
+                </tr>
+            </thead>
+            <tbody id="my-requests-body">
+                <tr>
+                    <td colspan="5" style="color:var(--text-dim);text-align:center;padding:2rem;">Loading your request
+                        history...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/emergency.js"></script>
+{% endblock %}

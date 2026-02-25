@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}VAULT{% endblock %}
+{% block meta_description %}VANGUARD Vault — Browse and manage encrypted files{% endblock %}
+{% block nav_vault %}active{% endblock %}
+{% block page_title %}ACTIVE VAULT{% endblock %}
+{% block page_subtitle %}[ ENCRYPTED FILE REGISTRY ]{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <!-- Toolbar -->
+    <div class="vault-toolbar">
+        <div class="vault-filters">
+            <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">ALL</button>
+            <button class="filter-btn" data-filter="active" onclick="setFilter(this,'active')">ACTIVE</button>
+            <button class="filter-btn" data-filter="expired" onclick="setFilter(this,'expired')">EXPIRED</button>
+            <button class="filter-btn" data-filter="destroyed" onclick="setFilter(this,'destroyed')">DESTROYED</button>
+        </div>
+        <input type="text" id="vault-search" placeholder="SEARCH BY FILENAME..." style="max-width:300px;margin:0;"
+            oninput="filterFiles()">
+    </div>
+
+    <!-- File Table -->
+    <div style="overflow-x:auto;margin-top:1.5rem;">
+        <table class="audit-table" id="vault-table">
+            <thead>
+                <tr>
+                    <th>FILENAME</th>
+                    <th>STATUS</th>
+                    <th>EXPIRES</th>
+                    <th>ACCESSES</th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody id="vault-body">
+                <tr>
+                    <td colspan="5" style="color:var(--text-dim);text-align:center;padding:2rem;">Scanning for active
+                        payloads...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="vault-empty" class="hidden" style="text-align:center;padding:3rem;color:var(--text-dim);">
+        <div style="font-size:3rem;margin-bottom:1rem;">⬡</div>
+        <p>VAULT EMPTY — <a href="/dashboard/" style="color:var(--primary-cyan);">UPLOAD A FILE</a> TO BEGIN</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/vault.js"></script>
+{% endblock %}

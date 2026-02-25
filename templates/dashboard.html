@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}DASHBOARD{% endblock %}
+{% block meta_description %}VANGUARD Dashboard — System metrics and secure file upload{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}DASHBOARD{% endblock %}
+{% block page_subtitle %}[ SYSTEM OVERVIEW & SECURE UPLOAD ]{% endblock %}
+
+{% block content %}
+<!-- Metrics Row -->
+<div class="grid grid-4" style="margin-bottom:2rem;">
+    <div class="panel metric-card">
+        <p class="metric-label">PROTECTED FILES</p>
+        <h2 class="metric-value cyan" id="total-files">—</h2>
+        <p class="metric-sub">Total in vault</p>
+    </div>
+    <div class="panel metric-card">
+        <p class="metric-label">ACTIVE</p>
+        <h2 class="metric-value lime" id="active-files">—</h2>
+        <p class="metric-sub">Accessible now</p>
+    </div>
+    <div class="panel metric-card">
+        <p class="metric-label">EXPIRED / ERASED</p>
+        <h2 class="metric-value danger" id="expired-files">—</h2>
+        <p class="metric-sub">Self-destructed</p>
+    </div>
+    <div class="panel metric-card">
+        <p class="metric-label">PENDING REQUESTS</p>
+        <h2 class="metric-value warning" id="pending-requests">—</h2>
+        <p class="metric-sub">Emergency queue</p>
+    </div>
+</div>
+
+<!-- Upload + Recent Activity -->
+<div class="grid grid-2">
+    <!-- Upload Panel -->
+    <div class="panel">
+        <h3><span class="pulse" style="color:var(--primary-lime);">●</span> SECURE UPLOAD</h3>
+        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;">AES-256-GCM • Client-Side Encryption •
+            Key Escrow</p>
+
+        <form id="upload-form">
+            <label class="field-label">SELECT FILE</label>
+            <div class="file-drop-zone" id="drop-zone">
+                <input type="file" id="file-input" required style="display:none;">
+                <div id="drop-label" onclick="document.getElementById('file-input').click()">
+                    <span style="font-size:2rem;">⬡</span><br>
+                    <span>CLICK OR DROP FILE HERE</span>
+                </div>
+                <div id="selected-file-name" class="selected-name hidden"></div>
+            </div>
+
+            <div class="grid grid-2" style="gap:.8rem;margin-top:1rem;">
+                <div>
+                    <label class="field-label">TTL (HOURS)</label>
+                    <input type="number" id="ttl-input" value="24" min="1">
+                </div>
+                <div>
+                    <label class="field-label">ACCESS LIMIT (0=∞)</label>
+                    <input type="number" id="limit-input" value="0" min="0">
+                </div>
+            </div>
+
+            <div id="upload-progress-bar" class="progress-bar hidden">
+                <div id="upload-progress-fill" class="progress-fill"></div>
+            </div>
+
+            <button type="submit" class="btn btn-full" id="upload-btn">ENCRYPT &amp; UPLOAD</button>
+        </form>
+        <div id="upload-status" style="margin-top:1rem;font-size:0.8rem;text-align:center;min-height:1.2em;"></div>
+    </div>
+
+    <!-- Recent Files Snapshot -->
+    <div class="panel">
+        <h3>RECENT ACTIVITY</h3>
+        <p style="color:var(--text-dim);margin:.8rem 0 1.2rem;font-size:0.78rem;">Last 5 vault operations</p>
+        <div id="recent-files">
+            <p style="color:var(--text-dim);">Scanning vault...</p>
+        </div>
+        <div style="margin-top:1.5rem;">
+            <a href="/vault/" class="btn btn-full" style="display:block;text-align:center;">VIEW FULL VAULT →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

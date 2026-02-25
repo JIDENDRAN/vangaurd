@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VANGUARD{% endblock %} | Secure Vault</title>
+    <meta name="description"
+        content="{% block meta_description %}VANGUARD — Time-Bound Crypto-Protection System{% endblock %}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/nav.css">
+</head>
+
+<body>
+
+    <!-- Main App Shell -->
+    <div class="app-shell hidden" id="app-shell">
+
+        <!-- Sidebar Nav -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo" style="font-size:1.2rem;">VGD</span>
+                <span class="sidebar-full-name">VANGUARD</span>
+            </div>
+
+            <ul class="nav-links">
+                <li>
+                    <a href="/dashboard/" class="nav-link {% block nav_dashboard %}{% endblock %}" id="nav-dashboard">
+                        <span class="nav-icon">◈</span>
+                        <span class="nav-label">DASHBOARD</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/vault/" class="nav-link {% block nav_vault %}{% endblock %}" id="nav-vault">
+                        <span class="nav-icon">⬡</span>
+                        <span class="nav-label">VAULT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/emergency/" class="nav-link {% block nav_emergency %}{% endblock %}" id="nav-emergency">
+                        <span class="nav-icon">⚠</span>
+                        <span class="nav-label">EMERGENCY</span>
+                    </a>
+                </li>
+                <li id="audit-nav-item" class="hidden">
+                    <a href="/audit/" class="nav-link {% block nav_audit %}{% endblock %}" id="nav-audit">
+                        <span class="nav-icon">≡</span>
+                        <span class="nav-label">AUDIT LOG</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <span class="pulse-dot"></span>
+                    <span id="user-display-nav">---</span>
+                </div>
+                <a href="#" id="logout-btn" class="btn btn-danger"
+                    style="width:100%;margin-top:.5rem;font-size:0.7rem;padding:.5rem;">DISCONNECT</a>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <main class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">{% block page_title %}SYSTEM{% endblock %}</h1>
+                    <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+                </div>
+                <div class="header-status">
+                    <span class="pulse-dot"></span>
+                    <span style="font-size:0.75rem;color:var(--primary-lime);">STATUS: SECURE</span>
+                </div>
+            </div>
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+BAD_FILE: .\vanguard\management\__init__.py
+BAD_FILE: .\vanguard\management\commands\__init__.py
