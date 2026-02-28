@@ -5,11 +5,12 @@ from .models import User, FileRecord, EmergencyRequest, AuditLog, EncryptionKey
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'role', 'mfa_enabled')
+        fields = ('id', 'username', 'email', 'role', 'mfa_enabled', 'is_superuser')
 
 
 class FileRecordSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
+    has_emergency_access = serializers.SerializerMethodField()
 
     class Meta:
         model = FileRecord
@@ -17,8 +18,23 @@ class FileRecordSerializer(serializers.ModelSerializer):
             'id', 'owner', 'owner_username',
             'filename', 'cloud_path',
             'ttl_expiry', 'access_limit', 'access_count',
-            'status', 'created_at',
+            'status', 'created_at', 'has_emergency_access',
         )
+
+    def get_has_emergency_access(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        
+        from .models import EmergencyRequest
+        from django.utils import timezone
+        
+        return EmergencyRequest.objects.filter(
+            file=obj,
+            requested_by=request.user,
+            status='approved',
+            expires_at__gte=timezone.now()
+        ).exists()
 
 
 class EmergencyRequestSerializer(serializers.ModelSerializer):

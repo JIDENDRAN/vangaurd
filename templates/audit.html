@@ -12,7 +12,7 @@
         <div class="vault-filters">
             <button class="filter-btn active" onclick="setAuditFilter(this,'')">ALL EVENTS</button>
             <button class="filter-btn" onclick="setAuditFilter(this,'FILE_UPLOAD')">UPLOADS</button>
-            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_DOWNLOAD')">DOWNLOADS</button>
+            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_VIEW')">VIEWS</button>
             <button class="filter-btn" onclick="setAuditFilter(this,'EMERGENCY')">EMERGENCY</button>
         </div>
         <input type="text" id="audit-search" placeholder="SEARCH EVENTS..." style="max-width:300px;margin:0;"
@@ -25,7 +25,7 @@
         <div class="stat-mini"><span id="stat-uploads" style="color:var(--primary-lime);">—</span><br><span
                 class="metric-label">UPLOADS</span></div>
         <div class="stat-mini"><span id="stat-downloads" style="color:var(--primary-cyan);">—</span><br><span
-                class="metric-label">DOWNLOADS</span></div>
+                class="metric-label">VIEWS</span></div>
         <div class="stat-mini"><span id="stat-emergency" style="color:var(--warning);">—</span><br><span
                 class="metric-label">EMERGENCY</span></div>
     </div>

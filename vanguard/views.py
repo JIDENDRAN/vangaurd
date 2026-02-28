@@ -12,15 +12,16 @@ import datetime
 
 from .models import User, FileRecord, EncryptionKey, EmergencyRequest, AuditLog
 from .serializers import UserSerializer, FileRecordSerializer, EmergencyRequestSerializer, AuditLogSerializer
+from django.db.models import Q
 from .crypto_utils import (
     encrypt_file_data, decrypt_file_data, 
     encrypt_key_for_storage, decrypt_key_from_storage,
     split_key_shamir, reconstruct_key_shamir
 )
 
-class IsAdminOrCompliance(permissions.BasePermission):
+class IsAdminOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['admin', 'compliance']
+        return request.user.is_authenticated and request.user.role == 'admin'
 
 class FileViewSet(viewsets.ModelViewSet):
     queryset = FileRecord.objects.all()
@@ -28,18 +29,36 @@ class FileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.role in ['admin', 'compliance']:
+        from django.db.models import Q
+        user = self.request.user
+        if user.role == 'admin' or user.is_superuser:
             return FileRecord.objects.all()
-        return FileRecord.objects.filter(owner=self.request.user)
+        # Normal users see their own files AND any files uploaded by an Admin/Superuser
+        return FileRecord.objects.filter(
+            Q(owner=user) | Q(owner__role='admin') | Q(owner__is_superuser=True)
+        )
 
     @transaction.atomic
     def create(self, request):
+        if not (request.user.role == 'admin' or request.user.is_superuser):
+             return Response({"error": "Unauthorized: Only administrators can upload files."}, status=status.HTTP_403_FORBIDDEN)
+
         file_obj = request.FILES.get('file')
-        ttl_hours = int(request.data.get('ttl_hours', 24))
-        access_limit = int(request.data.get('access_limit', 0))
+        expire_at_str = request.data.get('expire_at')
         
         if not file_obj:
             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+             
+        if not expire_at_str:
+             return Response({"error": "No expiration date provided"}, status=status.HTTP_400_BAD_REQUEST)
+             
+        try:
+            # Parse ISO datetime string from flatpickr
+            expire_at = datetime.datetime.fromisoformat(expire_at_str.replace('Z', '+00:00'))
+            if timezone.is_naive(expire_at):
+                expire_at = timezone.make_aware(expire_at)
+        except ValueError:
+            return Response({"error": "Invalid expiration date format"}, status=status.HTTP_400_BAD_REQUEST)
 
         # 1. Encrypt file locally
         file_data = file_obj.read()
@@ -58,8 +77,8 @@ class FileViewSet(viewsets.ModelViewSet):
             owner=request.user,
             filename=file_obj.name,
             cloud_path=storage_path,
-            ttl_expiry=timezone.now() + datetime.timedelta(hours=ttl_hours),
-            access_limit=access_limit,
+            ttl_expiry=expire_at,
+            access_limit=0, # Hardcoded infinite limit as requested
             status='active'
         )
 
@@ -90,8 +109,15 @@ class FileViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         file_record = self.get_object()
         
-        # Check if user is owner or has an approved emergency request
+        # Security Logic:
+        # 1. Admins/Superusers can view everything
+        # 2. Users can view their own files
+        # 3. Anyone can view files owned by an Admin or Superuser
+        # 4. Approved emergency access covers the gap
         is_owner = file_record.owner == request.user
+        request_user_is_admin = (request.user.role == 'admin' or request.user.is_superuser)
+        file_owner_is_admin = (file_record.owner.role == 'admin' or file_record.owner.is_superuser)
+        
         has_emergency_access = EmergencyRequest.objects.filter(
             file=file_record,
             requested_by=request.user,
@@ -99,40 +125,77 @@ class FileViewSet(viewsets.ModelViewSet):
             expires_at__gte=timezone.now()
         ).exists()
 
-        if not (is_owner or has_emergency_access):
-            return Response({"error": "Unauthorized access. Permanent record created."}, status=status.HTTP_403_FORBIDDEN)
+        if not (is_owner or request_user_is_admin or file_owner_is_admin or has_emergency_access):
+            return Response({"error": "Unauthorized access restriction in effect."}, status=status.HTTP_403_FORBIDDEN)
 
         # Check status
         if file_record.status == 'destroyed':
             return Response({"error": "File protocol terminated. Key destroyed."}, status=status.HTTP_403_FORBIDDEN)
 
-        if file_record.status == 'expired' and not has_emergency_access:
+        if file_record.status == 'expired' and not (has_emergency_access or request_user_is_admin):
             return Response({"error": "File has expired. Emergency protocol required for recovery."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Dynamic failsafe: If the background task missed it, still block download based on timestamp
+        if file_record.ttl_expiry and file_record.ttl_expiry <= timezone.now() and not (has_emergency_access or request_user_is_admin):
+            return Response({"error": "Time-to-live expired. Access denied."}, status=status.HTTP_403_FORBIDDEN)
 
         # Check access limit (not applicable for emergency)
         if not has_emergency_access:
             if file_record.access_limit > 0 and file_record.access_count >= file_record.access_limit:
                 return Response({"error": "Access limit exceeded."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Retrieve Key
+        # 2. Retrieve Key
         try:
             key_record = EncryptionKey.objects.get(file=file_record)
-            if key_record.destroyed_flag:
-                 return Response({"error": "Decryption key has been destroyed permanently."}, status=status.HTTP_403_FORBIDDEN)
+        except EncryptionKey.DoesNotExist:
+            return Response({"error": "FILE PROTECTED BUT UNREADABLE: Encryption key has been permanently purged from the system."}, status=status.HTTP_403_FORBIDDEN)
             
-            # If it's an emergency, we might use Shamir reconstruction here if the main key was 'soft-deleted'
-            # But for this implementation, we'll decrypt from storage if not destroyed.
-            data_key = decrypt_key_from_storage(key_record.encrypted_key, key_record.nonce)
+        # 3. Decrypt Key and File Data
+        try:
             
-            # Read ciphertext
+            # Ensure we are working with raw bytes
+            enc_key = bytes(key_record.encrypted_key)
+            nonce = bytes(key_record.nonce)
+            file_nonce = bytes(key_record.file_nonce)
+            
+            try:
+                data_key = decrypt_key_from_storage(enc_key, nonce)
+            except ValueError as e:
+                # 3a. FAILSAFE: Master key mismatch detected. Attempting Shamir Recovery from Escrow.
+                shares = key_record.escrow_shares
+                if shares and len(shares) >= 2:
+                    try:
+                         from .crypto_utils import reconstruct_key_shamir
+                         data_key = reconstruct_key_shamir(shares)
+                         # Log recovery event
+                         AuditLog.objects.create(
+                            user=request.user,
+                            action_type='EMERGENCY_KEY_RECONSTRUCTION',
+                            file=file_record,
+                            details="Primary master key decryption failed (MAC Fail). Successfully recovered via Shamir Escrow Shares."
+                         )
+                    except Exception as recovery_err:
+                         return Response({"error": f"Critical encryption failure: Primary key mismatch and escrow reconstruction failed ({str(recovery_err)})."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    return Response({"error": "Encryption protocol mismatch (System MAC Fail) and no recovery shares available."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # 4. Decrypt actual file content
+            if not os.path.exists(file_record.cloud_path):
+                 return Response({"error": "Encrypted payload missing from vault storage."}, status=status.HTTP_404_NOT_FOUND)
+                 
             with open(file_record.cloud_path, "rb") as f:
                 ciphertext = f.read()
 
-            # Decrypted
-            decrypted_data = decrypt_file_data(ciphertext, data_key, key_record.file_nonce)
+            decrypted_data = decrypt_file_data(ciphertext, data_key, file_nonce)
             
             if decrypted_data is None:
-                return Response({"error": "Decryption protocol failure."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                AuditLog.objects.create(
+                    user=request.user,
+                    action_type='DECRYPTION_FAILED_FILE',
+                    file=file_record,
+                    details="File data decryption failed (Tag Mismatch)."
+                )
+                return Response({"error": "Decryption protocol failure. Payload integrity check failed."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Update access count
             file_record.access_count += 1
@@ -141,15 +204,20 @@ class FileViewSet(viewsets.ModelViewSet):
             # Log action
             AuditLog.objects.create(
                 user=request.user,
-                action_type='FILE_DOWNLOAD_SUCCESS',
+                action_type='FILE_VIEW_SUCCESS',
                 file=file_record,
                 ip_address=request.META.get('REMOTE_ADDR'),
-                details="Emergency override used" if has_emergency_access else "Standard access"
+                details=f"SECURE VIEW: {'Emergency protocol override' if has_emergency_access else 'Standard session'}"
             )
 
             # Stream back
-            response = HttpResponse(decrypted_data, content_type='application/octet-stream')
-            response['Content-Disposition'] = f'attachment; filename="{file_record.filename}"'
+            import mimetypes
+            content_type, _ = mimetypes.guess_type(file_record.filename)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = HttpResponse(decrypted_data, content_type=content_type)
+            response['Content-Disposition'] = f'inline; filename="{file_record.filename}"'
             return response
 
         except Exception as e:
@@ -193,7 +261,7 @@ class EmergencyRequestViewSet(viewsets.ModelViewSet):
         
         return Response(EmergencyRequestSerializer(req).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminOrCompliance])
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminOnly])
     def approve(self, request, pk=None):
         emergency_req = self.get_object()
         if emergency_req.status != 'pending':
@@ -201,7 +269,7 @@ class EmergencyRequestViewSet(viewsets.ModelViewSet):
 
         emergency_req.status = 'approved'
         emergency_req.approved_by = request.user
-        emergency_req.expires_at = timezone.now() + datetime.timedelta(minutes=30)
+        emergency_req.expires_at = timezone.now() + datetime.timedelta(days=1)
         emergency_req.save()
 
         AuditLog.objects.create(
@@ -214,9 +282,16 @@ class EmergencyRequestViewSet(viewsets.ModelViewSet):
         return Response(EmergencyRequestSerializer(emergency_req).data)
 
 class AuditLogView(APIView):
-    permission_classes = [IsAdminOrCompliance]
+    permission_classes = [IsAdminOnly]
 
     def get(self, request):
         logs = AuditLog.objects.all().order_by('-timestamp')
         serializer = AuditLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+class UserProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
         return Response(serializer.data)

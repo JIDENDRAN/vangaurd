@@ -1,6 +1,7 @@
 /* dashboard.js — Upload + Metrics + Recent Files snapshot */
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await checkUserRole();
     const files = await loadAllFiles();
     renderMetrics(files);
     renderRecentFiles(files);
@@ -8,6 +9,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupUploadForm();
     setupDropZone();
 });
+
+async function checkUserRole() {
+    const resp = await fetchSecure(API.me);
+    if (resp && resp.ok) {
+        const user = await resp.json();
+        const uploadPanel = document.getElementById('upload-panel-container');
+        const restrictedPanel = document.getElementById('upload-restricted-container');
+
+        if (user.role?.toLowerCase() === 'admin' || user.is_superuser) {
+            uploadPanel?.classList.remove('hidden');
+            restrictedPanel?.classList.add('hidden');
+        } else {
+            uploadPanel?.classList.add('hidden');
+            restrictedPanel?.classList.remove('hidden');
+        }
+    }
+}
 
 async function loadAllFiles() {
     const resp = await fetchSecure(API.files);
@@ -87,8 +105,7 @@ function setupUploadForm() {
 
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
-        formData.append('ttl_hours', ttlInput.value);
-        formData.append('access_limit', limitInput.value);
+        formData.append('expire_at', document.getElementById('expire-input').value);
 
         progressFill.style.width = '60%';
 

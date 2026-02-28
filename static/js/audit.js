@@ -32,12 +32,12 @@ async function loadAuditLogs() {
 function renderStats(logs) {
     const total = logs.length;
     const uploads = logs.filter(l => l.action_type.includes('UPLOAD')).length;
-    const downloads = logs.filter(l => l.action_type.includes('DOWNLOAD')).length;
+    const views = logs.filter(l => l.action_type.includes('DOWNLOAD') || l.action_type.includes('VIEW')).length;
     const emergency = logs.filter(l => l.action_type.includes('EMERGENCY')).length;
 
     animateCount('stat-total', total);
     animateCount('stat-uploads', uploads);
-    animateCount('stat-downloads', downloads);
+    animateCount('stat-downloads', views);
     animateCount('stat-emergency', emergency);
 }
 
@@ -45,7 +45,9 @@ function renderStats(logs) {
 function renderTable(logs) {
     const search = (document.getElementById('audit-search')?.value || '').toLowerCase();
     const filtered = logs.filter(l => {
-        const matchType = !activeTypeFilter || l.action_type.includes(activeTypeFilter);
+        const matchType = !activeTypeFilter ||
+            l.action_type.includes(activeTypeFilter) ||
+            (activeTypeFilter === 'FILE_VIEW' && l.action_type.includes('DOWNLOAD'));
         const matchSearch = !search ||
             l.action_type.toLowerCase().includes(search) ||
             (l.details || '').toLowerCase().includes(search) ||
@@ -101,14 +103,14 @@ window.filterAudit = () => renderTable(allLogs);
 /* ---- Helpers ---- */
 function eventTypeClass(type) {
     if (type.includes('UPLOAD')) return 'event-upload';
-    if (type.includes('DOWNLOAD')) return 'event-download';
+    if (type.includes('DOWNLOAD') || type.includes('VIEW')) return 'event-download';
     if (type.includes('EMERGENCY')) return 'event-emergency';
     return 'event-other';
 }
 
 function eventBadge(type) {
     if (type.includes('UPLOAD')) return type.replace(/_/g, ' ');
-    if (type.includes('DOWNLOAD')) return type.replace(/_/g, ' ');
+    if (type.includes('DOWNLOAD') || type.includes('VIEW')) return type.replace(/_/g, ' ');
     if (type.includes('EMERGENCY')) return type.replace(/_/g, ' ');
     return type.replace(/_/g, ' ');
 }

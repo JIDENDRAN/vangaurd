@@ -6,7 +6,6 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('user', 'User'),
         ('admin', 'Admin'),
-        ('compliance', 'Compliance Officer'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     mfa_enabled = models.BooleanField(default=False)

@@ -16,26 +16,18 @@ def check_expired_files():
         with transaction.atomic():
             # 1. Trigger key destruction
             try:
-                key_record = EncryptionKey.objects.get(file=file_record)
-                # Overwrite key in record (Simulation of memory override as best as DB allows)
-                key_record.encrypted_key = b'\0' * len(key_record.encrypted_key)
-                key_record.destroyed_flag = True
-                key_record.save()
-                
-                # 2. Mark file status
+                # MARK AS EXPIRED BUT PRESERVE KEY FOR ADMIN/EMERGENCY ACCESS
                 file_record.status = 'expired'
                 file_record.save()
                 
-                # 3. Log event
                 AuditLog.objects.create(
-                    action_type='AUTO_KEY_DESTRUCTION',
+                    action_type='AUTO_FILE_EXPIRATION',
                     file=file_record,
-                    details=f"Key destroyed due to TTL expiration: {file_record.ttl_expiry}"
+                    details=f"File protocol set to EXPIRED due to TTL: {file_record.ttl_expiry}. Key preserved for admin/emergency retrieval."
                 )
                 count += 1
-            except EncryptionKey.DoesNotExist:
-                file_record.status = 'expired'
-                file_record.save()
+            except Exception:
+                pass
 
     return f"Successfully processed {count} expired files."
 

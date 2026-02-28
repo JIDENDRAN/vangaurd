@@ -47,9 +47,19 @@ function renderVault() {
             ? `${f.access_count} / ${f.access_limit}`
             : `${f.access_count} / ∞`;
 
-        const downloadBtn = f.status === 'active'
-            ? `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="downloadFile('${escHtml(f.id)}')">⬇ GET</button>`
-            : '';
+        const isAdmin = localStorage.getItem('is_admin') === 'true';
+        let actionButtons = `<button class="btn btn-danger" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="copyId('${escHtml(f.id)}')">⎘ ID</button>`;
+
+        if (f.status === 'active') {
+            actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="viewFile('${escHtml(f.id)}')">👁 VIEW</button>` + actionButtons;
+        } else if (f.status === 'expired') {
+            if (isAdmin || f.has_emergency_access) {
+                const label = isAdmin ? '👁 VIEW (ADMIN)' : '👁 VIEW (EMERGENCY)';
+                actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--danger);color:var(--danger);" onclick="viewFile('${escHtml(f.id)}')">${label}</button>` + actionButtons;
+            } else {
+                actionButtons = `<a href="/emergency/" class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--warning);color:var(--warning);text-decoration:none;">⚠ REQUEST ACCESS</a>` + actionButtons;
+            }
+        }
 
         return `
         <tr class="vault-row" data-status="${f.status}">
@@ -62,42 +72,14 @@ function renderVault() {
             <td style="font-size:0.8rem;text-align:center;">${accessInfo}</td>
             <td>
                 <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-                    ${downloadBtn}
-                    <button class="btn btn-danger" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="copyId('${escHtml(f.id)}')">⎘ ID</button>
+                    ${actionButtons}
                 </div>
             </td>
         </tr>`;
     }).join('');
 }
 
-async function downloadFile(id) {
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerText = 'DECRYPTING...';
 
-    const resp = await fetchSecure(`${API.files}${id}/download/`);
-    btn.disabled = false;
-    btn.innerText = '⬇ GET';
-
-    if (resp && resp.ok) {
-        const blob = await resp.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const disposition = resp.headers.get('Content-Disposition') || '';
-        const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-        a.download = match ? match[1].replace(/['"]/g, '') : 'downloaded_file';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        // Refresh to update access count
-        await loadVault();
-    } else if (resp) {
-        const data = await resp.json().catch(() => ({}));
-        showToast(`ACCESS DENIED: ${data.error || 'Unknown error'}`, 'danger');
-    }
-}
 
 window.copyId = (id) => {
     navigator.clipboard.writeText(id).then(() => {

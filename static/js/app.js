@@ -2,7 +2,8 @@ const API = {
     login: '/api/auth/login/',
     files: '/api/files/',
     audit: '/api/audit/',
-    emergency: '/api/emergency/'
+    emergency: '/api/emergency/',
+    me: '/api/auth/me/'
 };
 
 let tokens = {
@@ -122,7 +123,7 @@ async function loadFiles() {
                 </div>
             </div>
             <div style="margin-top: 1rem; display: flex; gap: 10px;">
-                ${f.status === 'active' ? `<button class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.7rem;" onclick="downloadFile('${f.id}')">DOWNLOAD</button>` : ''}
+                ${f.status === 'active' ? `<button class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.7rem;" onclick="viewFile('${f.id}')">👁 VIEW</button>` : ''}
                 <button class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.7rem;" onclick="copyId('${f.id}')">COPY ID</button>
             </div>
         `;
@@ -133,25 +134,21 @@ async function loadFiles() {
     document.getElementById('expired-files').innerText = expired;
 }
 
-async function downloadFile(id) {
+async function viewFile(id) {
     const resp = await fetchSecure(`${API.files}${id}/download/`);
     if (resp && resp.ok) {
         const blob = await resp.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        // Try to get filename from header
-        const disposition = resp.headers.get('Content-Disposition');
-        let filename = 'downloaded_file';
-        if (disposition && disposition.indexOf('attachment') !== -1) {
-            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-            const matches = filenameRegex.exec(disposition);
-            if (matches != null && matches[1]) filename = matches[1].replace(/[ '"]/g, '');
-        }
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+
+        const modal = document.getElementById('secure-viewer-modal');
+        const container = document.getElementById('viewer-container');
+
+        // Render content
+        container.innerHTML = `<iframe src="${url}#toolbar=0" style="width:100%; height:100%; border:none; pointer-events:none;" allowfullscreen></iframe>
+                               <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10;"></div>`;
+
+        modal.classList.remove('hidden');
+
         loadAudit(); // Refresh audit
         loadFiles(); // Refresh counts
     } else {
@@ -159,6 +156,37 @@ async function downloadFile(id) {
         alert(`ACCESS DENIED: ${data.error || 'Unknown Error'}`);
     }
 }
+
+window.closeSecureViewer = function () {
+    const modal = document.getElementById('secure-viewer-modal');
+    const container = document.getElementById('viewer-container');
+    modal.classList.add('hidden');
+    container.innerHTML = '';
+};
+
+// Anti-screenshot measures
+window.addEventListener('blur', () => {
+    const overlay = document.getElementById('anti-screenshot-overlay');
+    if (overlay && !document.getElementById('secure-viewer-modal').classList.contains('hidden')) {
+        overlay.classList.remove('hidden');
+    }
+});
+window.addEventListener('focus', () => {
+    const overlay = document.getElementById('anti-screenshot-overlay');
+    if (overlay) overlay.classList.add('hidden');
+});
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'PrintScreen') {
+        const overlay = document.getElementById('anti-screenshot-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+        setTimeout(() => { if (overlay) overlay.classList.add('hidden'); }, 3000);
+    }
+});
+document.addEventListener('contextmenu', event => {
+    if (document.getElementById('secure-viewer-modal') && !document.getElementById('secure-viewer-modal').classList.contains('hidden')) {
+        event.preventDefault();
+    }
+});
 
 // --- UPLOAD ---
 const uploadForm = document.getElementById('upload-form');
@@ -174,7 +202,11 @@ if (uploadForm) {
 
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
-        formData.append('ttl_hours', ttlInput.value);
+        if (document.getElementById('expire-select')) {
+            formData.append('ttl_preset', document.getElementById('expire-select').value);
+        } else {
+            formData.append('ttl_preset', '24h');
+        }
         formData.append('access_limit', limitInput.value);
 
         statusEl.innerText = "ENCRYPTING PAYLOAD...";

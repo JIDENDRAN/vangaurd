@@ -33,7 +33,7 @@
 <!-- Upload + Recent Activity -->
 <div class="grid grid-2">
     <!-- Upload Panel -->
-    <div class="panel">
+    <div class="panel hidden" id="upload-panel-container">
         <h3><span class="pulse" style="color:var(--primary-lime);">●</span> SECURE UPLOAD</h3>
         <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;">AES-256-GCM • Client-Side Encryption •
             Key Escrow</p>
@@ -49,15 +49,14 @@
                 <div id="selected-file-name" class="selected-name hidden"></div>
             </div>
 
-            <div class="grid grid-2" style="gap:.8rem;margin-top:1rem;">
-                <div>
-                    <label class="field-label">TTL (HOURS)</label>
-                    <input type="number" id="ttl-input" value="24" min="1">
-                </div>
-                <div>
-                    <label class="field-label">ACCESS LIMIT (0=∞)</label>
-                    <input type="number" id="limit-input" value="0" min="0">
-                </div>
+            <!-- Flatpickr CSS loaded conditionally within the block -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+            <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+
+            <div style="margin-top:1rem;margin-bottom:1rem;">
+                <label class="field-label">SELF-DESTRUCT DATE & TIME</label>
+                <input type="text" id="expire-input" required placeholder="Select a specific date..." readonly
+                    style="width:100%; cursor:pointer; background:rgba(0,0,0,0.5); border:1px solid var(--border-cyan); color:var(--text-main); outline:none; padding: 0.8rem;">
             </div>
 
             <div id="upload-progress-bar" class="progress-bar hidden">
@@ -67,6 +66,14 @@
             <button type="submit" class="btn btn-full" id="upload-btn">ENCRYPT &amp; UPLOAD</button>
         </form>
         <div id="upload-status" style="margin-top:1rem;font-size:0.8rem;text-align:center;min-height:1.2em;"></div>
+    </div>
+
+    <div class="panel hidden" id="upload-restricted-container"
+        style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:300px;">
+        <div style="font-size:3rem; margin-bottom:1rem; color:var(--text-dim);">⊘</div>
+        <h3 style="color:var(--text-dim);">UPLOAD RESTRICTED</h3>
+        <p style="color:var(--text-dim); font-size:0.8rem; max-width:250px; margin-top:0.5rem;">Only system
+            administrators are authorized to upload new encrypted payloads to the vault.</p>
     </div>
 
     <!-- Recent Files Snapshot -->
@@ -84,5 +91,18 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        flatpickr("#expire-input", {
+            enableTime: true,
+            dateFormat: "Z",
+            altInput: true,
+            altFormat: "F j, Y at h:i K",
+            minDate: "today",
+            defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        });
+    });
+</script>
+<script src="/static/js/dashboard.js?v=7"></script>
 {% endblock %}
