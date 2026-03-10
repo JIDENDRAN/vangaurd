@@ -18,6 +18,8 @@ from .crypto_utils import (
     encrypt_key_for_storage, decrypt_key_from_storage,
     split_key_shamir, reconstruct_key_shamir
 )
+from .s3_utils import upload_to_s3, download_from_s3
+from django.conf import settings
 
 class IsAdminOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -64,19 +66,26 @@ class FileViewSet(viewsets.ModelViewSet):
         file_data = file_obj.read()
         ciphertext, data_key, file_nonce = encrypt_file_data(file_data)
         
-        # 2. Upload ciphertext (Simulation: save to local media or DB for now)
-        # In real AWS S3, you'd use boto3 here.
-        # For this demo, we'll store it in a local 'storage' folder.
-        storage_path = f"encrypted_storage/{file_obj.name}.enc"
-        os.makedirs("encrypted_storage", exist_ok=True)
-        with open(storage_path, "wb") as f:
-            f.write(ciphertext)
+        # 2. Upload ciphertext
+        storage_path = f"vanguard_vault/{file_obj.name}.enc"
+        if settings.USE_S3:
+            s3_path = upload_to_s3(ciphertext, storage_path)
+            if not s3_path:
+                return Response({"error": "Failed to upload to cloud storage."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            storage_location = s3_path
+        else:
+            local_dir = "encrypted_storage"
+            os.makedirs(local_dir, exist_ok=True)
+            local_path = os.path.join(local_dir, f"{file_obj.name}.enc")
+            with open(local_path, "wb") as f:
+                f.write(ciphertext)
+            storage_location = local_path
 
         # 3. Create FileRecord
         file_record = FileRecord.objects.create(
             owner=request.user,
             filename=file_obj.name,
-            cloud_path=storage_path,
+            cloud_path=storage_location,
             ttl_expiry=expire_at,
             access_limit=0, # Hardcoded infinite limit as requested
             status='active'
@@ -180,11 +189,18 @@ class FileViewSet(viewsets.ModelViewSet):
                     return Response({"error": "Encryption protocol mismatch (System MAC Fail) and no recovery shares available."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # 4. Decrypt actual file content
-            if not os.path.exists(file_record.cloud_path):
-                 return Response({"error": "Encrypted payload missing from vault storage."}, status=status.HTTP_404_NOT_FOUND)
-                 
-            with open(file_record.cloud_path, "rb") as f:
-                ciphertext = f.read()
+            if settings.USE_S3:
+                # Extract key from s3://bucket/key
+                s3_key = file_record.cloud_path.replace(f"s3://{settings.AWS_STORAGE_BUCKET_NAME}/", "")
+                ciphertext = download_from_s3(s3_key)
+            else:
+                if not os.path.exists(file_record.cloud_path):
+                     return Response({"error": "Encrypted payload missing from vault storage."}, status=status.HTTP_404_NOT_FOUND)
+                with open(file_record.cloud_path, "rb") as f:
+                    ciphertext = f.read()
+
+            if ciphertext is None:
+                return Response({"error": "Failed to retrieve encrypted payload from storage."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             decrypted_data = decrypt_file_data(ciphertext, data_key, file_nonce)
             

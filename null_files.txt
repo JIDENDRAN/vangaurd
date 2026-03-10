@@ -1,2 +1,0 @@
-Null byte found in: .\vanguard\management\__init__.py
-Null byte found in: .\vanguard\management\commands\__init__.py
