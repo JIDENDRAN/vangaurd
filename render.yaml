@@ -1,0 +1,51 @@
+services:
+  # Web Service
+  - type: web
+    name: vanguard-web
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn core.wsgi:application"
+    envVars:
+      - key: USE_RDS
+        value: "True"
+      - key: DB_PORT
+        value: "5432"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+
+  # Redis (for Celery)
+  - type: redis
+    name: vanguard-redis
+    ipAllowList: [] # Only allow internal traffic
+
+  # Celery Worker
+  - type: worker
+    name: vanguard-worker
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A core worker -l info"
+    envVars:
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: vanguard-redis
+          property: connectionString
+
+  # Celery Beat
+  - type: worker
+    name: vanguard-beat
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A core beat -l info"
+    envVars:
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: vanguard-redis
+          property: connectionString
