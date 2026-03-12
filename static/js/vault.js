@@ -21,12 +21,18 @@ function renderVault() {
     const search = (document.getElementById('vault-search')?.value || '').toLowerCase();
 
     let filtered = allFiles.filter(f => {
+        const expiry = new Date(f.ttl_expiry);
+        const isExpired = expiry < new Date();
+        const effectiveStatus = (f.status === 'active' && isExpired) ? 'expired' : f.status;
+
         let matchFilter = false;
         if (currentFilter === 'all') {
             matchFilter = true;
         } else if (currentFilter === 'active') {
-            // "Active" now includes "expired" files per user request
-            matchFilter = (f.status === 'active' || f.status === 'expired');
+            // "Active" includes both active and expired per previous user request
+            matchFilter = (effectiveStatus === 'active' || effectiveStatus === 'expired');
+        } else if (currentFilter === 'expired') {
+            matchFilter = (effectiveStatus === 'expired');
         } else {
             matchFilter = (f.status === currentFilter);
         }
@@ -48,6 +54,8 @@ function renderVault() {
     tbody.innerHTML = filtered.map(f => {
         const expiry = new Date(f.ttl_expiry);
         const isExpired = expiry < new Date();
+        const effectiveStatus = (f.status === 'active' && isExpired) ? 'expired' : f.status;
+
         const expiryStr = isExpired
             ? `<span style="color:var(--danger);">${expiry.toLocaleString()} ⚠</span>`
             : expiry.toLocaleString();
@@ -72,12 +80,12 @@ function renderVault() {
         }
 
         return `
-        <tr class="vault-row" data-status="${f.status}">
+        <tr class="vault-row" data-status="${effectiveStatus}">
             <td>
                 <strong style="color:var(--primary-cyan);">${escHtml(f.filename)}</strong><br>
                 <span style="font-size:0.65rem;color:var(--text-dim);">${escHtml(f.id)}</span>
             </td>
-            <td><span class="status-badge status-${f.status}">${f.status.toUpperCase()}</span></td>
+            <td><span class="status-badge status-${effectiveStatus}">${effectiveStatus.toUpperCase()}</span></td>
             <td style="font-size:0.8rem;">${expiryStr}</td>
             <td style="font-size:0.8rem;text-align:center;">${accessInfo}</td>
             <td>
