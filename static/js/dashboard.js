@@ -35,9 +35,10 @@ async function loadAllFiles() {
 
 function renderMetrics(files) {
     if (!Array.isArray(files)) return;
+    const now = new Date();
     const total = files.length;
-    const active = files.filter(f => f.status === 'active').length;
-    const expired = files.filter(f => f.status === 'expired' || f.status === 'destroyed').length;
+    const active = files.filter(f => f.status === 'active' && new Date(f.ttl_expiry) > now).length;
+    const expired = files.filter(f => f.status === 'expired' || f.status === 'destroyed' || new Date(f.ttl_expiry) <= now).length;
 
     animateCount('total-files', total);
     animateCount('active-files', active);
@@ -65,18 +66,23 @@ function renderRecentFiles(files) {
         return;
     }
 
+    const now = new Date();
     const recent = [...files].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
-    el.innerHTML = recent.map(f => `
-        <div class="file-card" style="border-left-color:${statusColor(f.status)};">
+    el.innerHTML = recent.map(f => {
+        const isExpired = new Date(f.ttl_expiry) <= now;
+        const displayStatus = (f.status === 'active' && isExpired) ? 'expired' : f.status;
+
+        return `
+        <div class="file-card" style="border-left-color:${statusColor(displayStatus)};">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <strong style="color:var(--primary-cyan);font-size:0.85rem;">${escHtml(f.filename)}</strong>
-                <span class="status-badge status-${f.status}">${f.status.toUpperCase()}</span>
+                <span class="status-badge status-${displayStatus}">${displayStatus.toUpperCase()}</span>
             </div>
             <div style="font-size:0.7rem;color:var(--text-dim);margin-top:.4rem;">
                 Expires: ${new Date(f.ttl_expiry).toLocaleString()}
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 /* ---- Upload Form ---- */

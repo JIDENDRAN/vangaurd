@@ -21,7 +21,16 @@ function renderVault() {
     const search = (document.getElementById('vault-search')?.value || '').toLowerCase();
 
     let filtered = allFiles.filter(f => {
-        const matchFilter = currentFilter === 'all' || f.status === currentFilter;
+        let matchFilter = false;
+        if (currentFilter === 'all') {
+            matchFilter = true;
+        } else if (currentFilter === 'active') {
+            // "Active" now includes "expired" files per user request
+            matchFilter = (f.status === 'active' || f.status === 'expired');
+        } else {
+            matchFilter = (f.status === currentFilter);
+        }
+
         const matchSearch = !search || f.filename.toLowerCase().includes(search) || f.id.toLowerCase().includes(search);
         return matchFilter && matchSearch;
     });
@@ -50,14 +59,15 @@ function renderVault() {
         const isAdmin = localStorage.getItem('is_admin') === 'true';
         let actionButtons = `<button class="btn btn-danger" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="copyId('${escHtml(f.id)}')">⎘ ID</button>`;
 
-        if (f.status === 'active') {
+        if (f.status === 'active' && !isExpired) {
             actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="viewFile('${escHtml(f.id)}')">👁 VIEW</button>` + actionButtons;
-        } else if (f.status === 'expired') {
+        } else {
+            // Expired or explicitly marked as 'expired'
             if (isAdmin || f.has_emergency_access) {
-                const label = isAdmin ? '👁 VIEW (ADMIN)' : '👁 VIEW (EMERGENCY)';
+                const label = isAdmin ? '👁 VIEW (ADMIN)' : '👁 VIEW (OVERRIDE)';
                 actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--danger);color:var(--danger);" onclick="viewFile('${escHtml(f.id)}')">${label}</button>` + actionButtons;
             } else {
-                actionButtons = `<a href="/emergency/" class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--warning);color:var(--warning);text-decoration:none;">⚠ REQUEST ACCESS</a>` + actionButtons;
+                actionButtons = `<a href="/emergency/?file_id=${escHtml(f.id)}" class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--warning);color:var(--warning);text-decoration:none;">⚠ EMERGENCY OVERRIDE</a>` + actionButtons;
             }
         }
 

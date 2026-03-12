@@ -2,9 +2,19 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
     setupEmergencyForm();
+    handleQueryParams();
     await loadEmergencyQueue();
     await loadMyRequests();
 });
+
+function handleQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    const fileId = params.get('file_id');
+    if (fileId) {
+        const input = document.getElementById('target-file-id');
+        if (input) input.value = fileId;
+    }
+}
 
 /* ---- Submit Emergency Request ---- */
 function setupEmergencyForm() {
@@ -71,7 +81,23 @@ async function loadEmergencyQueue() {
         return;
     }
 
-    listEl.innerHTML = pending.map(req => `
+    const isAdmin = localStorage.getItem('is_admin') === 'true';
+
+    listEl.innerHTML = pending.map(req => {
+        let actionButtons = '';
+        if (isAdmin) {
+            actionButtons = `
+                <div style="display:flex;gap:.5rem;">
+                    <button class="btn" style="flex:1;padding:.4rem;font-size:0.7rem;"
+                        onclick="approveRequest(${req.id}, this)">✓ APPROVE ACCESS</button>
+                    <button class="btn btn-danger" style="flex:1;padding:.4rem;font-size:0.7rem;"
+                        onclick="rejectRequest(${req.id}, this)">✗ DENY</button>
+                </div>`;
+        } else {
+            actionButtons = `<div style="text-align:center;font-size:0.7rem;color:var(--warning);border:1px solid var(--warning);padding:.4rem;opacity:0.7;">AWAITING DUAL-AUTHORIZATION</div>`;
+        }
+
+        return `
         <div class="request-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
                 <span style="font-size:0.65rem;color:var(--text-dim);">REQUESTED BY</span>
@@ -88,14 +114,9 @@ async function loadEmergencyQueue() {
             <div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:.8rem;">
                 Submitted: ${new Date(req.timestamp).toLocaleString()}
             </div>
-            <div style="display:flex;gap:.5rem;">
-                <button class="btn" style="flex:1;padding:.4rem;font-size:0.7rem;"
-                    onclick="approveRequest(${req.id}, this)">✓ APPROVE ACCESS</button>
-                <button class="btn btn-danger" style="flex:1;padding:.4rem;font-size:0.7rem;"
-                    onclick="rejectRequest(${req.id}, this)">✗ DENY</button>
-            </div>
+            ${actionButtons}
         </div>
-    `).join('');
+    `}).join('');
 }
 
 /* ---- Load My Request History ---- */
