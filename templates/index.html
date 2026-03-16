@@ -22,6 +22,16 @@
         <h1 class="logo" style="text-align:center;margin-bottom:.5rem;">VANGUARD</h1>
         <p style="text-align:center;color:var(--text-dim);margin-bottom:2rem;font-size:0.75rem;letter-spacing:3px;">
             SECURE PROTOCOL ACCESS</p>
+        <div style="margin-bottom:1.5rem;">
+            <label class="field-label" style="text-align:center;">PROTOCOL LEVEL</label>
+            <div style="display:flex; gap:0.5rem;">
+                <button type="button" id="role-admin" class="filter-btn active" style="flex:1;"
+                    onclick="setLoginRole('admin')">ADMIN</button>
+                <button type="button" id="role-user" class="filter-btn" style="flex:1;"
+                    onclick="setLoginRole('user')">USER</button>
+            </div>
+        </div>
+
         <form id="login-form">
             <input type="text" id="username" placeholder="USERNAME" required autocomplete="username">
             <input type="password" id="password" placeholder="PASSWORD" required autocomplete="current-password">
@@ -31,6 +41,28 @@
             style="color:var(--danger);margin-top:1rem;text-align:center;font-size:0.8rem;min-height:1.2em;"></p>
     </div>
     <script>
+        let currentRole = 'admin';
+        const roleCredentials = {
+            'admin': { u: 'admin', p: 'admin123' },
+            'user': { u: 'operator', p: 'operator123' }
+        };
+
+        // Initialize with default role
+        window.addEventListener('DOMContentLoaded', () => {
+            setLoginRole('admin');
+        });
+
+        window.setLoginRole = function (role) {
+            currentRole = role;
+            document.getElementById('role-admin').classList.toggle('active', role === 'admin');
+            document.getElementById('role-user').classList.toggle('active', role === 'user');
+
+            // Auto-fill credentials for convenience
+            const creds = roleCredentials[role];
+            document.getElementById('username').value = creds.u;
+            document.getElementById('password').value = creds.p;
+        };
+
         // Redirect if already authenticated
         if (localStorage.getItem('access_token')) {
             window.location.href = '/dashboard/';
@@ -42,8 +74,11 @@
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('login-error');
             const btn = document.getElementById('login-btn');
+
+            errorEl.innerText = '';
             btn.innerText = 'VERIFYING...';
             btn.disabled = true;
+
             try {
                 const resp = await fetch('/api/auth/login/', {
                     method: 'POST',
