@@ -31,14 +31,8 @@ class FileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        from django.db.models import Q
-        user = self.request.user
-        if user.role == 'admin' or user.is_superuser:
-            return FileRecord.objects.all()
-        # Normal users see their own files AND any files uploaded by an Admin/Superuser
-        return FileRecord.objects.filter(
-            Q(owner=user) | Q(owner__role='admin') | Q(owner__is_superuser=True)
-        )
+        # Allow all authenticated users to see all files in the vault
+        return FileRecord.objects.all()
 
     @transaction.atomic
     def create(self, request):
@@ -118,14 +112,9 @@ class FileViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         file_record = self.get_object()
         
-        # Security Logic:
-        # 1. Admins/Superusers can view everything
-        # 2. Users can view their own files
-        # 3. Anyone can view files owned by an Admin or Superuser
-        # 4. Approved emergency access covers the gap
-        is_owner = file_record.owner == request.user
+        # Shared Logic: Any authenticated user can access any file.
+        # (Admins/Superusers still bypass expiry/limit checks below)
         request_user_is_admin = (request.user.role == 'admin' or request.user.is_superuser)
-        file_owner_is_admin = (file_record.owner.role == 'admin' or file_record.owner.is_superuser)
         
         has_emergency_access = EmergencyRequest.objects.filter(
             file=file_record,
@@ -133,9 +122,6 @@ class FileViewSet(viewsets.ModelViewSet):
             status='approved',
             expires_at__gte=timezone.now()
         ).exists()
-
-        if not (is_owner or request_user_is_admin or file_owner_is_admin or has_emergency_access):
-            return Response({"error": "Unauthorized access restriction in effect."}, status=status.HTTP_403_FORBIDDEN)
 
         # Check status
         if file_record.status == 'destroyed':
@@ -189,12 +175,13 @@ class FileViewSet(viewsets.ModelViewSet):
                     return Response({"error": "Encryption protocol mismatch (System MAC Fail) and no recovery shares available."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # 4. Decrypt actual file content
-            if settings.USE_S3:
+            # Determine if we should pull from S3 or local based on the path prefix
+            if file_record.cloud_path.startswith('s3://'):
                 # Extract key from s3://bucket/key
                 s3_key = file_record.cloud_path.replace(f"s3://{settings.AWS_STORAGE_BUCKET_NAME}/", "")
                 ciphertext = download_from_s3(s3_key)
             else:
-                # Normalize path for the current OS (handles / vs \ mismatch)
+                # Treat as local file path
                 normalized_path = os.path.normpath(file_record.cloud_path)
                 
                 # If the path doesn't exist, try resolving it relative to BASE_DIR
@@ -204,7 +191,7 @@ class FileViewSet(viewsets.ModelViewSet):
                         normalized_path = alt_path
                 
                 if not os.path.exists(normalized_path):
-                     return Response({"error": "Encrypted payload missing from vault storage."}, status=status.HTTP_404_NOT_FOUND)
+                     return Response({"error": f"Encrypted payload missing from local storage ({file_record.filename})."}, status=status.HTTP_404_NOT_FOUND)
                 
                 with open(normalized_path, "rb") as f:
                     ciphertext = f.read()
