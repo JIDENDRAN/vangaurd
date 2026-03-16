@@ -376,3 +376,20 @@ input:focus {
         padding: 0.5rem 0.2rem;
     }
 }
+
+/* Excel Preview Table Styles */
+#viewer-container table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    color: #000;
+}
+#viewer-container table td, #viewer-container table th {
+    border: 1px solid #ccc;
+    padding: 8px;
+    font-size: 0.8rem;
+}
+#viewer-container table th {
+    background: #f4f4f4;
+    font-weight: bold;
+}

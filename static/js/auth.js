@@ -81,22 +81,27 @@ window.viewFile = async function (id) {
     const container = document.getElementById('viewer-container');
     if (!modal || !container) return;
 
-    // Show loading state
-    const btn = event.target;
-    const oldText = btn.innerText;
-    btn.innerText = '⟳ SECURING...';
-    btn.disabled = true;
+    // Show loading state if called from a click event
+    const btn = window.event ? window.event.currentTarget || window.event.target : null;
+    const oldText = btn ? btn.innerText : null;
+    if (btn && btn.tagName === 'BUTTON') {
+        btn.innerText = '⟳ SECURING...';
+        btn.disabled = true;
+    }
 
     const resp = await fetchSecure(`${API.files}${id}/download/`);
-    btn.innerText = oldText;
-    btn.disabled = false;
+
+    if (btn && oldText) {
+        btn.innerText = oldText;
+        btn.disabled = false;
+    }
 
     if (resp && resp.ok) {
         const contentType = resp.headers.get('Content-Type') || '';
         const blob = await resp.blob();
         const url = window.URL.createObjectURL(blob);
+        console.log('VANGUARD SECURE VIEW:', contentType, id);
         const username = localStorage.getItem('username') || 'VANGUARD-SECURE';
-
         let innerContent = '';
 
         if (contentType.startsWith('image/')) {
@@ -111,14 +116,32 @@ window.viewFile = async function (id) {
             // PDF View
             innerContent = `<iframe src="${url}#toolbar=0" style="width:100%; height:100%; border:none; background:#fff;" allowfullscreen></iframe>
                             <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; background:transparent;"></div>`;
+        } else if (contentType.includes('word') || contentType.includes('officedocument.word') || contentType.includes('application/msword')) {
+            // Word (.docx) rendering via docx-preview
+            innerContent = `<div id="word-render" style="width:100%; height:100%; overflow:auto; background:#f0f0f0; padding:2rem;"></div>`;
+        } else if (contentType.includes('excel') || contentType.includes('spreadsheet') || contentType.includes('officedocument.spreadsheet')) {
+            // Excel rendering via SheetJS
+            try {
+                const data = await blob.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const html = XLSX.utils.sheet_to_html(worksheet);
+                innerContent = `<div style="width:100%; height:100%; overflow:auto; background:#fff; color:#333; padding:2rem; font-family:sans-serif;">
+                                    <h4 style="color:var(--primary-cyan);margin-bottom:1rem;">PREVIEW: ${firstSheetName}</h4>
+                                    ${html}
+                                </div>`;
+            } catch (err) {
+                innerContent = `<div style="color:var(--danger);">FAILED TO RENDER SPREADSHEET</div>`;
+            }
         } else {
-            // Fallback for types browsers can't natively "view" safely in an iframe without download (like .docx)
+            // Fallback for unknown types
             innerContent = `
                 <div style="text-align:center; color:white;">
                     <div style="font-size:4rem; margin-bottom:1rem; opacity:0.3;">⬡</div>
                     <h3>PREVIEW NOT SUPPORTED</h3>
                     <p style="color:var(--text-dim); margin-top:0.5rem; font-size:0.85rem;">Mime-Type: ${contentType}</p>
-                    <p style="margin-top:2rem; font-size:0.75rem; color:var(--danger);">⚠ Standard browsers cannot natively render this format within the secure sandbox.</p>
+                    <p style="margin-top:2rem; font-size:0.75rem; color:var(--danger);">⚠ SECURE PROTOCOL: DOWNLOADS ARE RESTRICTED FOR THIS FORMAT.</p>
                 </div>
             `;
         }
@@ -131,6 +154,18 @@ window.viewFile = async function (id) {
                 ${Array(9).fill(`<div>${username} • ${new Date().toLocaleDateString()}</div>`).join('')}
             </div>
         `;
+
+        modal.classList.remove('hidden');
+
+        // Post-processing for Word rendering
+        const wordArea = document.getElementById('word-render');
+        if (wordArea) {
+            try {
+                await docx.renderAsync(blob, wordArea);
+            } catch (err) {
+                wordArea.innerHTML = `<div style="color:var(--danger);">FAILED TO RENDER WORD DOCUMENT</div>`;
+            }
+        }
 
         modal.classList.remove('hidden');
 

@@ -194,9 +194,19 @@ class FileViewSet(viewsets.ModelViewSet):
                 s3_key = file_record.cloud_path.replace(f"s3://{settings.AWS_STORAGE_BUCKET_NAME}/", "")
                 ciphertext = download_from_s3(s3_key)
             else:
-                if not os.path.exists(file_record.cloud_path):
+                # Normalize path for the current OS (handles / vs \ mismatch)
+                normalized_path = os.path.normpath(file_record.cloud_path)
+                
+                # If the path doesn't exist, try resolving it relative to BASE_DIR
+                if not os.path.exists(normalized_path):
+                    alt_path = os.path.join(settings.BASE_DIR, normalized_path)
+                    if os.path.exists(alt_path):
+                        normalized_path = alt_path
+                
+                if not os.path.exists(normalized_path):
                      return Response({"error": "Encrypted payload missing from vault storage."}, status=status.HTTP_404_NOT_FOUND)
-                with open(file_record.cloud_path, "rb") as f:
+                
+                with open(normalized_path, "rb") as f:
                     ciphertext = f.read()
 
             if ciphertext is None:
