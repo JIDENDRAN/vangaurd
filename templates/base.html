@@ -84,12 +84,13 @@
     <div id="secure-viewer-modal" class="hidden"
         style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; display:flex; flex-direction:column;">
         <div
-            style="padding:1rem; background:#000; border-bottom:1px solid var(--primary-cyan); display:flex; justify-content:space-between; align-items:center;">
-            <div style="color:var(--danger); font-size:0.8rem; letter-spacing:1px; animation:pulse 2s infinite;">
-                ⚠ COPYING OR SAVING IS STRICTLY PROHIBITED
+            style="padding:0.8rem; background:#000; border-bottom:1px solid var(--primary-cyan); display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
+            <div id="viewer-warning-text"
+                style="color:var(--danger); font-size:0.65rem; letter-spacing:1px; animation:pulse 2s infinite; font-weight:bold;">
+                ⚠ COPYING PROHIBITED
             </div>
-            <button class="btn btn-danger" onclick="closeSecureViewer()" style="padding:0.4rem 1rem;">CLOSE
-                CONNECTION</button>
+            <button class="btn btn-danger" onclick="closeSecureViewer()"
+                style="padding:0.3rem 0.6rem; font-size:0.65rem; white-space:nowrap;">CLOSE</button>
         </div>
         <div id="viewer-container"
             style="flex:1; width:100%; position:relative; overflow:hidden; user-select:none; pointer-events:auto; display:flex; align-items:center; justify-content:center;">

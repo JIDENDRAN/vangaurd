@@ -384,12 +384,45 @@ input:focus {
     background: #fff;
     color: #000;
 }
-#viewer-container table td, #viewer-container table th {
+
+#viewer-container table td,
+#viewer-container table th {
     border: 1px solid #ccc;
     padding: 8px;
     font-size: 0.8rem;
 }
+
 #viewer-container table th {
     background: #f4f4f4;
     font-weight: bold;
+}
+
+/* --- Responsive Secure Viewer --- */
+#viewer-container img {
+    max-width: 95% !important;
+    max-height: 90vh !important;
+    object-fit: contain;
+}
+
+#viewer-container iframe {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#viewer-container div {
+    max-width: 100%;
+}
+
+@media (max-width: 600px) {
+    #secure-watermark {
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: repeat(4, 1fr) !important;
+        font-size: 0.8rem !important;
+    }
+
+    #viewer-container>div {
+        width: 95% !important;
+        padding: 1rem !important;
+        font-size: 0.75rem !important;
+    }
 }
