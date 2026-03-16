@@ -14,6 +14,35 @@
             justify-content: center;
             min-height: 100vh;
         }
+
+        .role-btn {
+            background: transparent;
+            border: 1px solid var(--border-cyan);
+            color: var(--text-dim);
+            padding: 0.6rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .role-btn.active#role-admin {
+            background: var(--primary-cyan);
+            color: #000 !important;
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+            font-weight: 800;
+        }
+
+        .role-btn.active#role-user {
+            background: var(--primary-lime);
+            color: #000 !important;
+            border-color: var(--primary-lime);
+            box-shadow: 0 0 20px rgba(182, 255, 0, 0.6);
+            font-weight: 800;
+        }
     </style>
 </head>
 
@@ -25,9 +54,9 @@
         <div style="margin-bottom:1.5rem;">
             <label class="field-label" style="text-align:center;">PROTOCOL LEVEL</label>
             <div style="display:flex; gap:0.5rem;">
-                <button type="button" id="role-admin" class="filter-btn active" style="flex:1;"
+                <button type="button" id="role-admin" class="role-btn active" style="flex:1;"
                     onclick="setLoginRole('admin')">ADMIN</button>
-                <button type="button" id="role-user" class="filter-btn" style="flex:1;"
+                <button type="button" id="role-user" class="role-btn" style="flex:1;"
                     onclick="setLoginRole('user')">USER</button>
             </div>
         </div>
