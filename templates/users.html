@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}User Management | Vanguard{% endblock %}
+{% block breadcrumb %}User Management{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.25rem;">User Administration</h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem;">Manage secure access credentials and roles for the
+        registry.</p>
+</div>
+
+<div class="panel"
+    style="padding: 1.75rem; border-radius: var(--radius-xl); background: #ffffff; border: 1px solid var(--border-light);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+        <div>
+            <h2 style="font-size: 1.15rem; color: var(--text-main); font-weight: 700; font-family: 'Outfit';">Authorized
+                Personnel</h2>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem; font-weight: 500;">Registry of
+                active security clearants</p>
+        </div>
+        <button id="open-create-modal" class="btn btn-primary"
+            style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: var(--radius-lg); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+            <span>+</span> Provision New Account
+        </button>
+    </div>
+
+    <div class="table-container" style="border: none;">
+        <table class="custom-table">
+            <thead>
+                <tr style="background: #fcfcfd;">
+                    <th
+                        style="padding: 1rem 1.5rem; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; color: var(--text-dim); width: 40%;">
+                        Personnel Identity / Role</th>
+                    <th
+                        style="padding: 1rem 1.5rem; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; color: var(--text-dim);">
+                        Security Clearance</th>
+                    <th
+                        style="padding: 1rem 1.5rem; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; color: var(--text-dim);">
+                        Verification Status</th>
+                </tr>
+            </thead>
+            <tbody id="user-list-body">
+                <tr>
+                    <td colspan="3"
+                        style="text-align: center; padding: 4rem; color: var(--text-dim); font-size: 0.85rem;">
+                        Synchronizing with personnel database...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- High-Fidelity Account Provisioning Modal -->
+<div id="create-user-modal" class="hidden"
+    style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="panel"
+        style="width: 100%; max-width: 440px; border-radius: var(--radius-2xl); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; overflow: hidden;">
+        <div style="background: var(--grad-dark); padding: 2rem; color: white; position: relative;">
+            <h3 style="font-size: 1.25rem; font-family: 'Outfit';">Provision Secure Account</h3>
+            <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.25rem;">Define clearance level and authentication
+                credentials</p>
+            <button id="close-modal"
+                style="position: absolute; top: 1.5rem; right: 1.5rem; background: transparent; border: none; color: white; opacity: 0.5; cursor: pointer; font-size: 1.25rem;">×</button>
+        </div>
+
+        <form id="create-user-form" style="padding: 2rem;">
+            {% csrf_token %}
+            <div style="margin-bottom: 1.5rem;">
+                <label class="field-label">Registry Username</label>
+                <input type="text" id="new-username" required placeholder="e.g. j.doe"
+                    style="padding: 0.75rem 1rem; border-radius: var(--radius); border: 1.5px solid var(--border-light); font-weight: 600;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label class="field-label">Security Keyphrase</label>
+                <input type="password" id="new-password" required placeholder="Minimum 6 characters"
+                    style="padding: 0.75rem 1rem; border-radius: var(--radius); border: 1.5px solid var(--border-light); font-weight: 600;">
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <label class="field-label">Clearance Designation</label>
+                <select id="new-role"
+                    style="padding: 0.75rem 1rem; border-radius: var(--radius); border: 1.5px solid var(--border-light); font-weight: 600; cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right%201rem%20center; background-size: 0.65rem%20auto;">
+                    <option value="user">Level 2 (Standard Personnel)</option>
+                    <option value="admin">Level 5 (Master Administrator)</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-full"
+                style="padding: 1rem; font-weight: 700; border-radius: var(--radius-lg); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+                Finalize Provisioning
+            </button>
+            <div id="form-error"
+                style="color: var(--danger); font-size: 0.75rem; font-weight: 600; text-align: center; margin-top: 1rem; display: none;">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/users.js?v=20260324"></script>
+{% endblock %}

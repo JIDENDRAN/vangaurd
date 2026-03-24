@@ -1,5 +1,21 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User, FileRecord, EmergencyRequest, AuditLog, EncryptionKey
+
+class VanguardTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['role'] = user.role
+        token['is_superuser'] = user.is_superuser
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['is_admin'] = self.user.role == 'admin' or self.user.is_superuser or self.user.is_staff
+        data['is_superuser'] = self.user.is_superuser
+        data['username'] = self.user.username
+        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -53,8 +69,8 @@ class EmergencyRequestSerializer(serializers.ModelSerializer):
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
-    user_username = serializers.CharField(source='user.username', read_only=True, default=None)
-    file_name     = serializers.CharField(source='file.filename', read_only=True, default=None)
+    user_username = serializers.SerializerMethodField()
+    file_name = serializers.SerializerMethodField()
 
     class Meta:
         model = AuditLog
@@ -64,3 +80,9 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'file', 'file_name',
             'ip_address', 'details', 'timestamp',
         )
+
+    def get_user_username(self, obj):
+        return obj.user.username if obj.user else "DELETED_USER"
+
+    def get_file_name(self, obj):
+        return obj.file.filename if obj.file else "DELETED_FILE"

@@ -1,90 +1,285 @@
 {% extends "base.html" %}
-{% block title %}DASHBOARD{% endblock %}
-{% block meta_description %}VANGUARD Dashboard — System metrics and secure file upload{% endblock %}
+{% block title %}Dashboard | Vanguard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
-{% block page_title %}DASHBOARD{% endblock %}
-{% block page_subtitle %}[ SYSTEM OVERVIEW & SECURE UPLOAD ]{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    /* Premium override for flatpickr */
+    .flatpickr-calendar {
+        border: none;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-radius: var(--radius-lg);
+    }
+
+    .flatpickr-day.selected {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    /* Fix for 'too big' arrows */
+    .flatpickr-prev-month svg,
+    .flatpickr-next-month svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    .flatpickr-prev-month,
+    .flatpickr-next-month {
+        padding: 10px !important;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="dashboard-header" style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.25rem;">Security Overview</h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem;">Real-time monitoring of your protected data vault</p>
+</div>
+
 <!-- Metrics Row -->
-<div class="grid grid-4" style="margin-bottom:2rem;">
-    <div class="panel metric-card">
-        <p class="metric-label">PROTECTED FILES</p>
-        <h2 class="metric-value cyan" id="total-files">—</h2>
-        <p class="metric-sub">Total in vault</p>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem;">
+    <!-- Metric Card: Vault -->
+    <div class="panel"
+        style="margin-bottom: 0; padding: 1.25rem; border-left: 4px solid var(--primary); display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative; background: #fff;">
+        <div>
+            <div
+                style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--text-dim); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.85rem;">🔒</span> TOTAL ENCRYPTED FILES
+            </div>
+            <div id="total-files"
+                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); font-family: 'Outfit'; line-height: 1;">
+                0</div>
+        </div>
     </div>
-    <div class="panel metric-card">
-        <p class="metric-label">ACTIVE</p>
-        <h2 class="metric-value lime" id="active-files">—</h2>
-        <p class="metric-sub">Accessible now</p>
+
+    <!-- Metric Card: Expiring -->
+    <div class="panel"
+        style="margin-bottom: 0; padding: 1.25rem; border-left: 4px solid var(--warning); display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
+        <div>
+            <div
+                style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--text-dim); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.85rem;">🕒</span> FILES EXPIRING SOON
+            </div>
+            <div id="active-files"
+                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); font-family: 'Outfit'; line-height: 1;">
+                0</div>
+        </div>
     </div>
-    <div class="panel metric-card">
-        <p class="metric-label">EXPIRED / ERASED</p>
-        <h2 class="metric-value danger" id="expired-files">—</h2>
-        <p class="metric-sub">Self-destructed</p>
+
+    <!-- Metric Card: Integrity -->
+    <div class="panel"
+        style="margin-bottom: 0; padding: 1.25rem; border-left: 4px solid var(--success); display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
+        <div>
+            <div
+                style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--text-dim); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.85rem;">🛡️</span> INTEGRITY SCORE
+            </div>
+            <div id="integrity-score"
+                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); font-family: 'Outfit'; line-height: 1;">
+                0%</div>
+        </div>
     </div>
-    <div class="panel metric-card">
-        <p class="metric-label">PENDING REQUESTS</p>
-        <h2 class="metric-value warning" id="pending-requests">—</h2>
-        <p class="metric-sub">Emergency queue</p>
+
+    <!-- Metric Card: Alerts -->
+    <div class="panel"
+        style="margin-bottom: 0; padding: 1.25rem; border-left: 4px solid var(--danger); display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
+        <div>
+            <div
+                style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--text-dim); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.85rem;">⚠️</span> EMERGENCY REQUESTS
+            </div>
+            <div id="pending-requests"
+                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); font-family: 'Outfit'; line-height: 1;">
+                0</div>
+        </div>
     </div>
 </div>
 
-<!-- Upload + Recent Activity -->
-<div class="grid grid-2">
-    <!-- Upload Panel -->
-    <div class="panel hidden" id="upload-panel-container">
-        <h3><span class="pulse" style="color:var(--primary-lime);">●</span> SECURE UPLOAD</h3>
-        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;">AES-256-GCM • Client-Side Encryption •
-            Key Escrow</p>
-
-        <form id="upload-form">
-            <label class="field-label">SELECT FILE</label>
-            <div class="file-drop-zone" id="drop-zone">
-                <input type="file" id="file-input" required style="display:none;">
-                <div id="drop-label" onclick="document.getElementById('file-input').click()">
-                    <span style="font-size:2rem;">⬡</span><br>
-                    <span>CLICK OR DROP FILE HERE</span>
+<div class="grid" style="grid-template-columns: 1.8fr 1.2fr; gap: 1.5rem;">
+    <!-- Active Vault Files -->
+    <div class="panel"
+        style="padding: 1.75rem 1.75rem 1.75rem 2.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-xl); background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2 style="font-size: 1.15rem; color: var(--text-main); font-weight: 700; font-family: 'Outfit';">Active
+                    Vault Inventory</h2>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                    <span
+                        style="display: inline-block; width: 6px; height: 6px; background: var(--success); border-radius: 50%;"></span>
+                    <p id="vault-status-text" style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">
+                        Retrieving cloud data...</p>
                 </div>
-                <div id="selected-file-name" class="selected-name hidden"></div>
             </div>
 
-            <!-- Flatpickr CSS loaded conditionally within the block -->
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-            <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
-
-            <div style="margin-top:1rem;margin-bottom:1rem;">
-                <label class="field-label">SELF-DESTRUCT DATE & TIME</label>
-                <input type="text" id="expire-input" required placeholder="Select a specific date..." readonly
-                    style="width:100%; cursor:pointer; background:rgba(0,0,0,0.5); border:1px solid var(--border-cyan); color:var(--text-main); outline:none; padding: 0.8rem;">
+            <div
+                style="display: flex; background: #f8fafc; padding: 0.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); margin-right: 0.5rem;">
+                <button class="btn btn-outline"
+                    style="border: none; background: #fff; box-shadow: var(--shadow-sm); padding: 0.35rem 0.75rem; font-size: 0.725rem; color: var(--text-main); font-weight: 600;">All
+                    Files</button>
+                <button class="btn btn-outline"
+                    style="border: none; padding: 0.35rem 0.75rem; font-size: 0.725rem; font-weight: 500;">Expiring
+                    Soon</button>
             </div>
-
-            <div id="upload-progress-bar" class="progress-bar hidden">
-                <div id="upload-progress-fill" class="progress-fill"></div>
-            </div>
-
-            <button type="submit" class="btn btn-full" id="upload-btn">ENCRYPT &amp; UPLOAD</button>
-        </form>
-        <div id="upload-status" style="margin-top:1rem;font-size:0.8rem;text-align:center;min-height:1.2em;"></div>
-    </div>
-
-    <div class="panel hidden" id="upload-restricted-container"
-        style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:300px;">
-        <div style="font-size:3rem; margin-bottom:1rem; color:var(--text-dim);">⊘</div>
-        <h3 style="color:var(--text-dim);">UPLOAD RESTRICTED</h3>
-        <p style="color:var(--text-dim); font-size:0.8rem; max-width:250px; margin-top:0.5rem;">Only system
-            administrators are authorized to upload new encrypted payloads to the vault.</p>
-    </div>
-
-    <!-- Recent Files Snapshot -->
-    <div class="panel">
-        <h3>RECENT ACTIVITY</h3>
-        <p style="color:var(--text-dim);margin:.8rem 0 1.2rem;font-size:0.78rem;">Last 5 vault operations</p>
-        <div id="recent-files">
-            <p style="color:var(--text-dim);">Scanning vault...</p>
         </div>
-        <div style="margin-top:1.5rem;">
-            <a href="/vault/" class="btn btn-full" style="display:block;text-align:center;">VIEW FULL VAULT →</a>
+
+        <div class="table-container" style="border: none; margin: 0 -1.75rem 0 -2.5rem;">
+            <table class="custom-table">
+                <thead>
+                    <tr style="background: #fcfcfd;">
+                        <th
+                            style="padding: 1rem 1.75rem 1rem 2.5rem; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; color: var(--text-dim); width: 60%;">
+                            Asset Cloud Identity</th>
+                        <th
+                            style="padding: 1rem 1.75rem; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; color: var(--text-dim);">
+                            Reclamation Status</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-files">
+                    <tr>
+                        <td colspan="2" style="text-align: center; padding: 4rem;">
+                            <div style="color: var(--text-dim); font-size: 0.85rem;">Initializing Secure Connection...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f8fafc; text-align: right;">
+            <a href="/vault/"
+                style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.375rem;">
+                Expand Vault Management <span>→</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Encryption Health -->
+    <div class="sidebar-right" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="panel" style="padding: 1.75rem; background: var(--grad-dark); color: white; border: none;">
+            <h3 style="font-size: 1rem; color: rgba(255,255,255,0.9); margin-bottom: 0.25rem;">Security Pulse</h3>
+            <p style="font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-bottom: 2rem;">AES-256-GCM Hardware
+                Accelerated</p>
+
+            <div
+                style="display: flex; align-items: center; justify-content: center; margin-bottom: 2.5rem; position: relative;">
+                <svg class="circle-chart" viewbox="0 0 33.83098862 33.83098862" width="140" height="140"
+                    style="transform: rotate(-90deg);">
+                    <circle class="circle-chart__background" stroke="rgba(255,255,255,0.1)" stroke-width="2.5"
+                        fill="none" cx="16.91549431" cy="16.91549431" r="15.91549431"></circle>
+                    <circle class="circle circle-chart__circle" stroke="#10b981" stroke-width="2.5"
+                        stroke-dasharray="94,100" stroke-linecap="round" fill="none" cx="16.91549431" cy="16.91549431"
+                        r="15.91549431"></circle>
+                </svg>
+                <div style="position: absolute; text-align: center;">
+                    <div class="circle-text" style="font-size: 1.75rem; font-weight: 700; font-family: 'Outfit';">94%
+                    </div>
+                    <div style="font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6;">
+                        Nominal</div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.75rem;">
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.7);">Protected Nodes</div>
+                    <div id="health-active-count" style="font-weight: 700; font-size: 0.85rem; font-family: 'Outfit';">0
+                    </div>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.75rem;">
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.7);">Master Key</div>
+                    <div style="color: #10b981; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                        Verified</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.7);">Threat Logs</div>
+                    <div id="health-threat-count" style="font-weight: 700; font-size: 0.85rem; font-family: 'Outfit';">0
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Redesigned High-Fidelity Asset Provisioning -->
+        <div id="upload-panel-container" class="hidden">
+            <div class="panel"
+                style="border: 1px solid var(--border-light); padding: 1.75rem; border-radius: var(--radius-xl); background: #ffffff; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                    <div
+                        style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                        📁</div>
+                    <h3 style="font-size: 1.1rem; color: var(--text-main); font-weight: 700; font-family: 'Outfit';">
+                        Asset Provisioning</h3>
+                </div>
+
+                <form id="upload-form">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="field-label"
+                            style="display: block; margin-bottom: 0.75rem; color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Secure
+                            Repository Entry</label>
+                        <div
+                            style="position: relative; border: 2px dashed #e2e8f0; border-radius: var(--radius-lg); padding: 2rem 1.25rem; text-align: center; background: #fcfcfd; transition: all 0.2s ease;">
+                            <input type="file" id="file-input" required
+                                style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;">📤</div>
+                            <div style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">Deposit asset or
+                                click to select</div>
+                            <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 0.25rem;">Encrypted
+                                local buffering active</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.75rem;">
+                            <label class="field-label"
+                                style="margin-bottom: 0; color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Automatic
+                                Reclamation Schedule</label>
+                            <span style="font-size: 0.65rem; color: var(--primary); font-weight: 700; cursor: help;">TTL
+                                Policy Active</span>
+                        </div>
+
+                        <!-- Quick Provision Presets -->
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                            <button type="button" class="btn-preset" data-h="1"
+                                style="flex: 1; padding: 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-light); background: #fcfcfd; color: var(--text-dim); cursor: pointer; transition: all 0.2s;">1
+                                HOUR</button>
+                            <button type="button" class="btn-preset" data-h="24"
+                                style="flex: 1; padding: 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-light); background: #fcfcfd; color: var(--text-dim); cursor: pointer; transition: all 0.2s;">24
+                                HOURS</button>
+                            <button type="button" class="btn-preset" data-h="168"
+                                style="flex: 1; padding: 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-light); background: #fcfcfd; color: var(--text-dim); cursor: pointer; transition: all 0.2s;">7
+                                DAYS</button>
+                            <button type="button" class="btn-preset active"
+                                style="flex: 0.5; padding: 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--primary-light); background: var(--primary-light); color: var(--primary); cursor: pointer;">📅</button>
+                        </div>
+
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <div
+                                style="position: absolute; left: 1rem; color: var(--primary); font-size: 0.9rem; z-index: 2; pointer-events: none;">
+                            </div>
+                            <input type="text" id="expire-input" required placeholder="Choose extraction window..."
+                                style="width: 100%; padding: 0.85rem 1rem 0.85rem 2.8rem; border: 1.5px solid var(--border-light); border-radius: var(--radius-lg); font-size: 0.85rem; font-weight: 700; color: var(--text-main); cursor: pointer; background: #ffffff; transition: border-color 0.2s ease, box-shadow 0.2s ease;">
+                        </div>
+                    </div>
+
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; padding: 0.75rem; background: #fffcf0; border: 1px solid #fef3c7; border-radius: var(--radius);">
+                        <span style="font-size: 0.85rem;">🛡️</span>
+                        <div style="font-size: 0.65rem; color: #92400e; font-weight: 600; line-height: 1.4;">
+                            Quantum-Safe Encryption will be applied to this archive before ledger synchronization.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full" id="upload-btn"
+                        style="padding: 1rem; font-weight: 700; border-radius: var(--radius-lg); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+                        Initialize Secure Provisioning
+                    </button>
+                    <p
+                        style="text-align: center; font-size: 0.6rem; color: var(--text-dim); margin-top: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                        FIPS-140-3 Compliant Protocol</p>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -94,15 +289,33 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        flatpickr("#expire-input", {
+        const picker = flatpickr("#expire-input", {
             enableTime: true,
-            dateFormat: "Z",
+            dateFormat: "Y-m-d H:i",
             altInput: true,
             altFormat: "F j, Y at h:i K",
             minDate: "today",
-            defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+            defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            time_24hr: false
+        });
+
+        // Quick-preset buttons
+        document.querySelectorAll('.btn-preset[data-h]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const hours = parseInt(this.getAttribute('data-h'));
+                const d = new Date(Date.now() + hours * 60 * 60 * 1000);
+                picker.setDate(d, true);
+                document.querySelectorAll('.btn-preset[data-h]').forEach(b => {
+                    b.style.background = '#fcfcfd';
+                    b.style.color = 'var(--text-dim)';
+                    b.style.borderColor = 'var(--border-light)';
+                });
+                this.style.background = 'var(--primary-light)';
+                this.style.color = 'var(--primary)';
+                this.style.borderColor = 'var(--primary-light)';
+            });
         });
     });
 </script>
-<script src="/static/js/dashboard.js?v=7"></script>
+<script src="/static/js/dashboard.js?v=20260324_v3"></script>
 {% endblock %}

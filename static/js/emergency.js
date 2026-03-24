@@ -30,13 +30,12 @@ function setupEmergencyForm() {
 
         if (!fileId || !reason) {
             statusEl.style.color = 'var(--danger)';
-            statusEl.innerText = '✗ FILE UUID AND JUSTIFICATION ARE REQUIRED';
+            statusEl.innerText = 'File UUID and justifications are required';
             return;
         }
 
         btn.disabled = true;
-        btn.innerText = 'INITIATING PROTOCOL...';
-        statusEl.innerText = '';
+        btn.innerText = '🛡️ Initiating Security Overwrite...';
 
         const resp = await fetchSecure(API.emergency, {
             method: 'POST',
@@ -45,17 +44,17 @@ function setupEmergencyForm() {
         });
 
         btn.disabled = false;
-        btn.innerText = 'INITIATE EMERGENCY PROTOCOL';
+        btn.innerText = 'Initiate Protocol Override';
 
         if (resp && resp.ok) {
-            statusEl.style.color = 'var(--primary-lime)';
-            statusEl.innerText = '✓ EMERGENCY PROTOCOL INITIATED — AWAITING DUAL AUTHORIZATION';
+            statusEl.style.color = 'var(--success)';
+            statusEl.innerText = '✓ Protocol Initiated — Waiting for dual-authorization...';
             form.reset();
             await loadMyRequests();
         } else {
             const data = resp ? await resp.json().catch(() => ({})) : {};
             statusEl.style.color = 'var(--danger)';
-            statusEl.innerText = `✗ PROTOCOL FAILED: ${data.detail || data.error || 'INVALID FILE ID OR UNAUTHORIZED'}`;
+            statusEl.innerText = `✗ Protocol Refused: ${data.detail || data.error || 'Check asset ID'}`;
         }
     });
 }
@@ -67,9 +66,12 @@ async function loadEmergencyQueue() {
     if (!listEl) return;
 
     if (!resp || !resp.ok) {
-        listEl.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;">[ RESTRICTED — ADMIN / COMPLIANCE ONLY ]</p>';
+        listEl.innerHTML = '<div style="padding: 2rem; border-radius: 8px; border: 1px dashed var(--danger); text-align: center; color: var(--danger); font-size: 0.8rem; font-weight: 600;">ACCESS RESTRICTED: SECURITY CLEARANCE REQUIRED</div>';
         const msgEl = document.getElementById('queue-role-msg');
-        if (msgEl) msgEl.style.color = 'var(--danger)';
+        if (msgEl) {
+            msgEl.textContent = "Administrative privileges are required to authorize overrides.";
+            msgEl.style.color = "var(--danger)";
+        }
         return;
     }
 
@@ -77,7 +79,7 @@ async function loadEmergencyQueue() {
     const pending = Array.isArray(reqs) ? reqs.filter(r => r.status === 'pending') : [];
 
     if (pending.length === 0) {
-        listEl.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:1.5rem 0;">[ NO PENDING AUTHORIZATIONS ]</p>';
+        listEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:3rem; background: #f8fafc; border-radius: 8px;">No pending authorizations in queue.</div>';
         return;
     }
 
@@ -87,31 +89,30 @@ async function loadEmergencyQueue() {
         let actionButtons = '';
         if (isAdmin) {
             actionButtons = `
-                <div style="display:flex;gap:.5rem;">
-                    <button class="btn" style="flex:1;padding:.4rem;font-size:0.7rem;"
-                        onclick="approveRequest(${req.id}, this)">✓ APPROVE ACCESS</button>
-                    <button class="btn btn-danger" style="flex:1;padding:.4rem;font-size:0.7rem;"
-                        onclick="rejectRequest(${req.id}, this)">✗ DENY</button>
+                <div style="display:flex; gap:.75rem; margin-top: 1rem;">
+                    <button class="btn btn-primary" style="flex:1; padding:.5rem; font-size:0.75rem; background: var(--success); border: none;"
+                        onclick="approveRequest(${req.id}, this)">✓ Approve</button>
+                    <button class="btn btn-danger" style="flex:1; padding:.5rem; font-size:0.75rem;"
+                        onclick="rejectRequest(${req.id}, this)">✗ Deny</button>
                 </div>`;
         } else {
-            actionButtons = `<div style="text-align:center;font-size:0.7rem;color:var(--warning);border:1px solid var(--warning);padding:.4rem;opacity:0.7;">AWAITING DUAL-AUTHORIZATION</div>`;
+            actionButtons = `<div style="text-align:center; font-size:0.75rem; color:var(--warning); background: var(--warning-light); padding:0.6rem; border-radius: 4px; font-weight: 600; margin-top: 1rem;">Awaiting Dual-Authorization...</div>`;
         }
 
         return `
-        <div class="request-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-                <span style="font-size:0.65rem;color:var(--text-dim);">REQUESTED BY</span>
-                <span style="color:var(--primary-cyan);font-size:0.8rem;">${escHtml(req.requested_by_username || req.requested_by || '—')}</span>
+        <div class="panel" style="margin-bottom: 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                <span style="font-size:0.7rem; color:var(--text-dim); text-transform: uppercase; font-weight: 700;">Authorizer Queue Id #${req.id}</span>
+                <span class="badge badge-info">${escHtml(req.requested_by_username || req.requested_by || '—')}</span>
             </div>
-            <div style="margin-bottom:.3rem;font-size:0.82rem;">
-                <span style="color:var(--text-dim);font-size:0.65rem;">FILE: </span>
-                <strong>${escHtml(req.file_name || req.file || '—')}</strong>
+            <div style="margin-bottom: 0.5rem; font-size: 0.875rem;">
+                <span style="color:var(--text-dim);">Target Asset: </span>
+                <strong style="color: var(--text-main);">${escHtml(req.file_name || req.file || '—')}</strong>
             </div>
-            <div style="font-size:0.75rem;color:var(--text-dim);font-style:italic;margin-bottom:.8rem;
-                        border-left:2px solid var(--warning);padding-left:.6rem;">
+            <div style="font-size:0.8rem; color:var(--text-muted); font-style:italic; background: #fdfdfd; padding: 1rem; border-left: 3px solid var(--primary); border-radius: 4px; margin-bottom: 0.5rem; line-height: 1.5;">
                 "${escHtml(req.reason)}"
             </div>
-            <div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:.8rem;">
+            <div style="font-size:0.7rem; color:var(--text-dim);">
                 Submitted: ${new Date(req.timestamp).toLocaleString()}
             </div>
             ${actionButtons}
@@ -126,7 +127,7 @@ async function loadMyRequests() {
     if (!tbody) return;
 
     if (!resp || !resp.ok) {
-        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:1.5rem;">Unable to load request history.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim); text-align:center; padding:3rem;">Forensic log timeout...</td></tr>';
         return;
     }
 
@@ -137,22 +138,21 @@ async function loadMyRequests() {
         : [];
 
     if (mine.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:1.5rem;">[ NO REQUESTS SUBMITTED YET ]</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim); text-align:center; padding:3rem;">No override history has been recorded.</td></tr>';
         return;
     }
 
     tbody.innerHTML = mine.map(r => {
-        const statusColors = { pending: 'warning', approved: 'status-active', rejected: 'status-expired', expired: 'status-expired' };
-        const colorClass = statusColors[r.status] || '';
+        const statusType = r.status === 'pending' ? 'warning' : (r.status === 'approved' ? 'success' : 'danger');
         const expires = r.expires_at ? new Date(r.expires_at).toLocaleString() : '—';
 
         return `
         <tr>
-            <td style="font-size:0.82rem;">${escHtml(r.file_name || r.file || '—')}</td>
-            <td style="font-size:0.75rem;color:var(--text-dim);font-style:italic;max-width:250px;">"${escHtml(r.reason)}"</td>
-            <td><span class="status-badge ${colorClass}">${r.status.toUpperCase()}</span></td>
-            <td style="font-size:0.75rem;">${new Date(r.timestamp).toLocaleString()}</td>
-            <td style="font-size:0.75rem;">${expires}</td>
+            <td style="font-weight: 600; color: var(--text-main); font-size: 0.875rem;">${escHtml(r.file_name || r.file || '—')}</td>
+            <td style="font-size:0.75rem; color:var(--text-muted); font-style:italic; max-width:280px;">"${escHtml(r.reason)}"</td>
+            <td><span class="badge badge-${statusType}">${r.status.toUpperCase()}</span></td>
+            <td style="font-size:0.75rem; color: var(--text-muted);">${new Date(r.timestamp).toLocaleString()}</td>
+            <td style="font-size:0.75rem; font-weight: 500;">${expires}</td>
         </tr>`;
     }).join('');
 }
@@ -160,42 +160,48 @@ async function loadMyRequests() {
 /* ---- Admin Actions ---- */
 window.approveRequest = async (id, btn) => {
     btn.disabled = true;
-    btn.innerText = 'APPROVING...';
+    btn.innerText = 'Authorizing...';
     const resp = await fetchSecure(`${API.emergency}${id}/approve/`, { method: 'POST' });
     if (resp && resp.ok) {
-        showToast('ACCESS GRANTED — AUDIT RECORD CREATED', 'lime');
+        showToast('Access window granted — Audit log verified', 'success');
         await loadEmergencyQueue();
     } else {
-        showToast('AUTHORIZATION FAILED', 'danger');
+        showToast('Protocol rejection: Unauthorized', 'danger');
         btn.disabled = false;
-        btn.innerText = '✓ APPROVE ACCESS';
+        btn.innerText = '✓ Approve';
     }
 };
 
 window.rejectRequest = async (id, btn) => {
     btn.disabled = true;
-    btn.innerText = 'DENYING...';
-    // Generic PATCH/POST; adapt if a reject endpoint exists
-    showToast('DENIAL LOGGED — REQUEST CLOSED', 'warning');
+    btn.innerText = 'Locking...';
+    showToast('Request denied. Final recorded in forensics.', 'info');
     await loadEmergencyQueue();
 };
 
-/* ---- Toast ---- */
-function showToast(msg, type = 'cyan') {
-    const colors = { cyan: 'var(--primary-cyan)', lime: 'var(--primary-lime)', danger: 'var(--danger)', warning: 'var(--warning)' };
+/* ---- Toast Notification ---- */
+function showToast(msg, type = 'primary') {
     const toast = document.createElement('div');
+    const color = type === 'danger' ? 'var(--danger)' : 'var(--primary)';
     toast.style.cssText = `
-        position:fixed;bottom:2rem;right:2rem;z-index:9999;
-        background:rgba(5,12,20,0.95);border:1px solid ${colors[type]};
-        color:${colors[type]};padding:.8rem 1.5rem;font-size:.8rem;
-        letter-spacing:1px;border-radius:2px;
-        box-shadow:0 0 20px ${colors[type]}44;
+        position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+        background: white; border-left: 4px solid ${color};
+        color: var(--text-main); padding: 1rem 1.5rem; font-size: 0.875rem;
+        font-weight: 500; border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; align-items: center; gap: 0.75rem;
     `;
-    toast.innerText = msg;
+    toast.innerHTML = `<span>🛡️</span> ${msg}`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function escHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

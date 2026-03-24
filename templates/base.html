@@ -1,117 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'>
     <title>{% block title %}VANGUARD{% endblock %} | Secure Vault</title>
-    <meta name="description"
-        content="{% block meta_description %}VANGUARD — Time-Bound Crypto-Protection System{% endblock %}">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/nav.css">
+    <meta name='description' content='{% block meta_description %}VANGUARD Security Protection System{% endblock %}'>
+    <link rel='stylesheet' href='/static/css/style.css?v=20260324'>
+    <link rel='stylesheet' href='/static/css/nav.css?v=20260324'>
+    <link rel='preconnect' href='https://fonts.googleapis.com'>
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap' rel='stylesheet'>
+    {% block extra_css %}{% endblock %}
 </head>
-
 <body>
-
-    <!-- Main App Shell -->
-    <div class="app-shell hidden" id="app-shell">
-
-        <!-- Sidebar Nav -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <span class="logo" style="font-size:1.2rem;">VGD</span>
-                <span class="sidebar-full-name">VANGUARD</span>
+    <div class='app-shell' id='app-shell'>
+        <aside class='sidebar' id='sidebar'>
+            <div class='sidebar-logo'>
+                <div class='logo-icon'>V</div>
+                <div class='logo-text'>Vanguard</div>
+                <div style='margin-left:auto; font-size:0.6rem; background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:700;'>PRO</div>
             </div>
-
-            <ul class="nav-links">
-                <li>
-                    <a href="/dashboard/" class="nav-link {% block nav_dashboard %}{% endblock %}" id="nav-dashboard">
-                        <span class="nav-icon">◈</span>
-                        <span class="nav-label">DASHBOARD</span>
+            <div class='sidebar-nav'>
+                <div class='sidebar-section'>
+                    <div class='sidebar-section-title'>Overview</div>
+                    <a href='/dashboard/' class='nav-link {% block nav_dashboard %}{% endblock %}' id='nav-dashboard'>
+                        <span class='nav-icon'>&#128202;</span>
+                        <span>Dashboard</span>
                     </a>
-                </li>
-                <li>
-                    <a href="/vault/" class="nav-link {% block nav_vault %}{% endblock %}" id="nav-vault">
-                        <span class="nav-icon">⬡</span>
-                        <span class="nav-label">VAULT</span>
+                    <a href='/vault/' class='nav-link {% block nav_vault %}{% endblock %}' id='nav-vault'>
+                        <span class='nav-icon'>&#128452;</span>
+                        <span>File Vault</span>
+                        <span id='vault-count-badge' style='margin-left:auto; font-size:0.7rem; color:var(--text-dim);'>0</span>
                     </a>
-                </li>
-                <li>
-                    <a href="/emergency/" class="nav-link {% block nav_emergency %}{% endblock %}" id="nav-emergency">
-                        <span class="nav-icon">⚠</span>
-                        <span class="nav-label">EMERGENCY</span>
-                    </a>
-                </li>
-                <li id="audit-nav-item" class="hidden">
-                    <a href="/audit/" class="nav-link {% block nav_audit %}{% endblock %}" id="nav-audit">
-                        <span class="nav-icon">≡</span>
-                        <span class="nav-label">AUDIT LOG</span>
-                    </a>
-                </li>
-            </ul>
-
-            <div class="sidebar-footer">
-                <div class="user-chip">
-                    <span class="pulse-dot"></span>
-                    <span id="user-display-nav">---</span>
                 </div>
-                <a href="#" id="logout-btn" class="btn btn-danger"
-                    style="width:100%;margin-top:.5rem;font-size:0.7rem;padding:.5rem;">DISCONNECT</a>
-            </div>
-        </nav>
-
-        <!-- Page Content -->
-        <main class="page-content">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">{% block page_title %}SYSTEM{% endblock %}</h1>
-                    <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+                <div class='sidebar-section'>
+                    <div class='sidebar-section-title'>Security</div>
+                    <a href='/emergency/' class='nav-link {% block nav_emergency %}{% endblock %}' id='nav-emergency'>
+                        <span class='nav-icon'>&#128680;</span>
+                        <span>Emergency Protocols</span>
+                        <span id='emergency-count-badge' style='margin-left:auto; font-size:0.7rem; background:var(--danger-light); color:var(--danger); padding:2px 6px; border-radius:999px;'>0</span>
+                    </a>
+                    <a href='/audit/' class='nav-link {% block nav_audit %}{% endblock %}' id='audit-nav-item'>
+                        <span class='nav-icon'>&#128203;</span>
+                        <span>Audit Logs</span>
+                    </a>
                 </div>
-                <div class="header-status">
-                    <span class="pulse-dot"></span>
-                    <span class="status-text" style="font-size:0.75rem;color:var(--primary-lime);">STATUS: SECURE</span>
-                    <a href="#" id="mobile-logout-btn" class="mobile-only-btn"
-                        style="display:none; color:var(--danger); font-size:0.75rem; margin-left:1rem; text-decoration:none;">[
-                        LOGOUT ]</a>
+                <div class='sidebar-section'>
+                    <div class='sidebar-section-title'>Options</div>
+                    <a href='/users/' class='nav-link {% block nav_users %}{% endblock %}' id='nav-users'>
+                        <span class='nav-icon'>&#128101;</span>
+                        <span>Users</span>
+                    </a>
+                    <a href='/settings/' class='nav-link {% block nav_settings %}{% endblock %}' id='nav-settings'>
+                        <span class='nav-icon'>&#9881;</span>
+                        <span>Settings</span>
+                    </a>
                 </div>
             </div>
-
-            {% block content %}{% endblock %}
+            <div class='sidebar-footer'>
+                <div class='user-profile'>
+                    <div class='user-avatar' id='user-avatar-initial'>A</div>
+                    <div class='user-info'>
+                        <div class='user-name' id='user-display-nav'>Admin</div>
+                        <div class='user-role'>Administrator</div>
+                    </div>
+                </div>
+                <button id='logout-btn' class='btn btn-danger' style='margin-top:0.5rem; justify-content:flex-start; width:100%;'><span>&#128682;</span> Logout</button>
+            </div>
+        </aside>
+        <main class='page-content'>
+            <header class='top-nav'>
+                <div class='breadcrumbs'>
+                    <span>Vanguard</span> / <span class='font-bold' style='color:var(--text-main);'>{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+                <div class='search-container'>
+                    <span class='search-icon'>&#128269;</span>
+                    <input type='text' placeholder='Search registry...' class='search-input'>
+                </div>
+                <div style='display:flex; align-items:center; gap:1rem;'>
+                    <a href='/vault/' class='btn btn-primary'><span>&#128228;</span> Upload File</a>
+                </div>
+            </header>
+            <div class='content-area'>{% block content %}{% endblock %}</div>
         </main>
     </div>
-
-    <!-- Secure Viewer Modal -->
-    <div id="secure-viewer-modal" class="hidden"
-        style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; display:flex; flex-direction:column;">
-        <div
-            style="padding:0.8rem; background:#000; border-bottom:1px solid var(--primary-cyan); display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
-            <div id="viewer-warning-text"
-                style="color:var(--danger); font-size:0.65rem; letter-spacing:1px; animation:pulse 2s infinite; font-weight:bold;">
-                ⚠ COPYING PROHIBITED
-            </div>
-            <button class="btn btn-danger" onclick="closeSecureViewer()"
-                style="padding:0.3rem 0.6rem; font-size:0.65rem; white-space:nowrap;">CLOSE</button>
-        </div>
-        <div id="viewer-container"
-            style="flex:1; width:100%; position:relative; overflow:hidden; user-select:none; pointer-events:auto; display:flex; align-items:center; justify-content:center;">
-            <!-- Secure content injected here -->
-        </div>
-        <!-- Anti-screenshot overlay via events -->
-        <div id="anti-screenshot-overlay" class="hidden"
-            style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:100000; background:rgba(0,0,0,0.95); backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:center; flex-direction:column; color:var(--primary-cyan);">
-            <div style="font-size:3rem; margin-bottom:1rem;">⚠</div>
-            <h2>CONTENT BLOCKED</h2>
-            <p style="color:var(--text-dim); font-size:0.8rem;">Focus lost or screenshot attempt detected.</p>
-        </div>
+    <div id='secure-viewer-modal' class='hidden' style='position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; display:flex; flex-direction:column;'>
+        <div id='viewer-container' style='flex:1; width:100%; position:relative; display:flex; align-items:center; justify-content:center;'></div>
+        <div id='anti-screenshot-overlay' class='hidden' style='position:absolute; top:0; left:0; width:100%; height:100%; z-index:100000; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; flex-direction:column; color:white;'></div>
     </div>
-
-    <!-- Word & Excel Rendering Libraries -->
-    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
-    <script src="https://unpkg.com/docx-preview/dist/docx-preview.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-
-    <script src="/static/js/auth.js?v=4"></script>
+    <script src='/static/js/auth.js?v=20260324'></script>
     {% block extra_js %}{% endblock %}
 </body>
-
 </html>

@@ -23,7 +23,11 @@ from django.conf import settings
 
 class IsAdminOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'admin'
+        return request.user.is_authenticated and (
+            request.user.role == 'admin' or 
+            request.user.is_superuser or 
+            request.user.is_staff
+        )
 
 class FileViewSet(viewsets.ModelViewSet):
     queryset = FileRecord.objects.all()
@@ -112,10 +116,10 @@ class FileViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         file_record = self.get_object()
         
-        # Shared Logic: Any authenticated user can access any file.
-        # (Admins/Superusers still bypass expiry/limit checks below)
+        # Authentication Context
         request_user_is_admin = (request.user.role == 'admin' or request.user.is_superuser)
         
+        # Verify Emergency Authorization
         has_emergency_access = EmergencyRequest.objects.filter(
             file=file_record,
             requested_by=request.user,
@@ -123,21 +127,24 @@ class FileViewSet(viewsets.ModelViewSet):
             expires_at__gte=timezone.now()
         ).exists()
 
-        # Check status
+        # Check status (Kill-switch check)
         if file_record.status == 'destroyed':
             return Response({"error": "File protocol terminated. Key destroyed."}, status=status.HTTP_403_FORBIDDEN)
 
-        if file_record.status == 'expired' and not (has_emergency_access or request_user_is_admin):
-            return Response({"error": "File has expired. Emergency protocol required for recovery."}, status=status.HTTP_403_FORBIDDEN)
+        # ADMINISTRATIVE PRIVILEGE: Administrators bypass all expiration and entry limit checks.
+        if not request_user_is_admin:
+            # Check Status Compliance
+            if file_record.status == 'expired' and not has_emergency_access:
+                return Response({"error": "File has expired. Emergency protocol required for recovery."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Dynamic failsafe: If the background task missed it, still block download based on timestamp
-        if file_record.ttl_expiry and file_record.ttl_expiry <= timezone.now() and not (has_emergency_access or request_user_is_admin):
-            return Response({"error": "Time-to-live expired. Access denied."}, status=status.HTTP_403_FORBIDDEN)
+            # Check Time-to-Live Compliance
+            if file_record.ttl_expiry and file_record.ttl_expiry <= timezone.now() and not has_emergency_access:
+                return Response({"error": "Time-to-live expired. Access denied."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Check access limit (not applicable for emergency)
-        if not has_emergency_access:
-            if file_record.access_limit > 0 and file_record.access_count >= file_record.access_limit:
-                return Response({"error": "Access limit exceeded."}, status=status.HTTP_403_FORBIDDEN)
+            # Check Access Limit Compliance
+            if not has_emergency_access:
+                if file_record.access_limit > 0 and file_record.access_count >= file_record.access_limit:
+                    return Response({"error": "Access limit exceeded."}, status=status.HTTP_403_FORBIDDEN)
 
         # 2. Retrieve Key
         try:
@@ -220,7 +227,7 @@ class FileViewSet(viewsets.ModelViewSet):
                 action_type='FILE_VIEW_SUCCESS',
                 file=file_record,
                 ip_address=request.META.get('REMOTE_ADDR'),
-                details=f"SECURE VIEW: {'Emergency protocol override' if has_emergency_access else 'Standard session'}"
+                details=f"SECURE VIEW: {'Administrative access' if request_user_is_admin else ('Emergency protocol override' if has_emergency_access else 'Standard session')}"
             )
 
             # Stream back
@@ -308,3 +315,53 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class UserListView(APIView):
+    permission_classes = [IsAdminOnly]
+
+    def get(self, request):
+        users = User.objects.all().order_by('date_joined')
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+
+
+class CreateUserView(APIView):
+    permission_classes = [IsAdminOnly]
+
+    def post(self, request):
+        username = request.data.get('username', '').strip()
+        password = request.data.get('password', '').strip()
+        role = request.data.get('role', 'user').strip().lower()
+
+        if not username or not password:
+            return Response({'error': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(password) < 6:
+            return Response({'error': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if role not in ['admin', 'user']:
+            return Response({'error': 'Invalid role. Use "admin" or "user".'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({'error': f'Username "{username}" is already taken.'}, status=status.HTTP_409_CONFLICT)
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            role=role,
+            is_staff=(role == 'admin'),
+        )
+
+        AuditLog.objects.create(
+            user=request.user,
+            action_type='USER_CREATED',
+            details=f'New account provisioned: {username} [{role.upper()}]',
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({
+            'id': str(user.id),
+            'username': user.username,
+            'role': user.role,
+        }, status=status.HTTP_201_CREATED)

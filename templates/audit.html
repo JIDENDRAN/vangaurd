@@ -1,62 +1,91 @@
 {% extends "base.html" %}
-{% block title %}AUDIT LOG{% endblock %}
-{% block meta_description %}VANGUARD Audit Trail — Forensic event log for compliance and admins{% endblock %}
+{% block title %}Audit Trail | Vanguard{% endblock %}
+{% block breadcrumb %}Audit Logs{% endblock %}
 {% block nav_audit %}active{% endblock %}
-{% block page_title %}AUDIT TRAIL{% endblock %}
-{% block page_subtitle %}[ FORENSIC EVENT LOG — ADMIN / COMPLIANCE ONLY ]{% endblock %}
 
 {% block content %}
+<div class="dashboard-header" style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.25rem;">Forensic Event Monitoring</h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem;">Continuous audit trail for compliance and
+        administrative forensics</p>
+</div>
+
 <div class="panel">
     <!-- Toolbar -->
-    <div class="vault-toolbar">
-        <div class="vault-filters">
-            <button class="filter-btn active" onclick="setAuditFilter(this,'')">ALL EVENTS</button>
-            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_UPLOAD')">UPLOADS</button>
-            <button class="filter-btn" onclick="setAuditFilter(this,'FILE_VIEW')">VIEWS</button>
-            <button class="filter-btn" onclick="setAuditFilter(this,'EMERGENCY')">EMERGENCY</button>
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 0.5rem; background: #f1f5f9; padding: 0.25rem; border-radius: var(--radius);">
+            <button class="btn btn-outline active" onclick="setAuditFilter(this,'')"
+                style="border: none; background: white; box-shadow: var(--shadow-sm);">All Events</button>
+            <button class="btn btn-outline" onclick="setAuditFilter(this,'FILE_UPLOAD')"
+                style="border: none;">Uploads</button>
+            <button class="btn btn-outline" onclick="setAuditFilter(this,'FILE_VIEW')"
+                style="border: none;">Views</button>
+            <button class="btn btn-outline" onclick="setAuditFilter(this,'EMERGENCY')"
+                style="border: none;">Emergency</button>
         </div>
-        <input type="text" id="audit-search" placeholder="SEARCH EVENTS..." style="max-width:300px;margin:0;"
-            oninput="filterAudit()">
+
+        <div style="position: relative; flex: 1; max-width: 320px;">
+            <input type="text" id="audit-search" placeholder="Search events..." oninput="filterAudit()"
+                style="padding-left: 2.5rem; margin-bottom: 0;">
+            <span
+                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-dim);">🔍</span>
+        </div>
     </div>
 
     <!-- Stats mini row -->
-    <div class="grid grid-4" style="margin:1.5rem 0;">
-        <div class="stat-mini"><span id="stat-total">—</span><br><span class="metric-label">TOTAL EVENTS</span></div>
-        <div class="stat-mini"><span id="stat-uploads" style="color:var(--primary-lime);">—</span><br><span
-                class="metric-label">UPLOADS</span></div>
-        <div class="stat-mini"><span id="stat-downloads" style="color:var(--primary-cyan);">—</span><br><span
-                class="metric-label">VIEWS</span></div>
-        <div class="stat-mini"><span id="stat-emergency" style="color:var(--warning);">—</span><br><span
-                class="metric-label">EMERGENCY</span></div>
+    <div class="grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem; gap: 1rem;">
+        <div class="panel" style="padding: 1rem; text-align: center; margin-bottom: 0;">
+            <div id="stat-total" style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">—</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                Total Events</div>
+        </div>
+        <div class="panel" style="padding: 1rem; text-align: center; margin-bottom: 0;">
+            <div id="stat-uploads" style="font-size: 1.5rem; font-weight: 700; color: var(--success);">—</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                Uploads</div>
+        </div>
+        <div class="panel" style="padding: 1rem; text-align: center; margin-bottom: 0;">
+            <div id="stat-downloads" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">—</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                Views</div>
+        </div>
+        <div class="panel" style="padding: 1rem; text-align: center; margin-bottom: 0;">
+            <div id="stat-emergency" style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">—</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                Emergency</div>
+        </div>
     </div>
 
     <!-- Full Audit Table -->
-    <div style="overflow-x:auto;">
-        <table class="audit-table" id="audit-full-table">
+    <div class="table-container">
+        <table class="custom-table" id="audit-full-table">
             <thead>
                 <tr>
-                    <th>TIMESTAMP</th>
-                    <th>USER</th>
-                    <th>EVENT TYPE</th>
-                    <th>FILE</th>
-                    <th>IP ADDRESS</th>
-                    <th>DETAILS</th>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Event Type</th>
+                    <th>Asset</th>
+                    <th>IP Address</th>
+                    <th>Technical Details</th>
                 </tr>
             </thead>
             <tbody id="audit-body">
                 <tr>
-                    <td colspan="6" style="color:var(--text-dim);text-align:center;padding:2rem;">Loading forensic
-                        records...</td>
+                    <td colspan="6" style="color:var(--text-dim); text-align:center; padding:3rem;">Retrieving forensic
+                        records from secure database...</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
     <!-- Restricted Banner (for non-admins) -->
-    <div id="audit-restricted" class="hidden" style="text-align:center;padding:4rem;color:var(--text-dim);">
-        <div style="font-size:3rem;margin-bottom:1rem;color:var(--danger);">⊘</div>
-        <p style="color:var(--danger);font-family:'Orbitron',sans-serif;letter-spacing:3px;">RESTRICTED ACCESS</p>
-        <p style="margin-top:.5rem;">Audit trail is available to ADMIN and COMPLIANCE roles only.</p>
+    <div id="audit-restricted" class="hidden" style="text-align:center; padding:4rem; color:var(--text-dim);">
+        <div style="font-size:3rem; margin-bottom:1rem; color:var(--danger);">🚫</div>
+        <p style="color:var(--danger); font-family:'Outfit', sans-serif; font-weight: 700; font-size:1.25rem;">
+            UNAUTHORIZED ACCESS</p>
+        <p style="margin-top:.5rem;">The audit trail is restricted to participants of the SEC-ADMIN and COMPLIANCE
+            protocols.</p>
     </div>
 </div>
 {% endblock %}

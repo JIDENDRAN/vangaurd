@@ -188,3 +188,6 @@ AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
 
 # Master Key for Key Vault (Encryption of keys at rest)
 MASTER_KEY = os.getenv('MASTER_KEY', 'this-is-a-very-secret-master-key-32bytes!!')
+
+# Authentication Redirect
+LOGIN_URL = '/'

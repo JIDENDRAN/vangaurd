@@ -1,63 +1,81 @@
 {% extends "base.html" %}
-{% block title %}EMERGENCY{% endblock %}
-{% block meta_description %}VANGUARD Emergency Override — Request or approve emergency file access{% endblock %}
+{% block title %}Emergency Access | Vanguard{% endblock %}
+{% block breadcrumb %}Emergency Requests{% endblock %}
 {% block nav_emergency %}active{% endblock %}
-{% block page_title %}EMERGENCY OVERRIDE{% endblock %}
-{% block page_subtitle %}[ DUAL-AUTHORIZATION RECOVERY PROTOCOL ]{% endblock %}
 
 {% block content %}
-<div class="grid grid-2">
+<div class="page-title-row">
+    <div>
+        <h1 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.25rem;">Dual-Authorization Recovery
+            Protocol</h1>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">Request or authorize emergency access to encrypted
+            payloads</p>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 1.2fr 1.8fr; gap: 1.5rem; margin-bottom: 2rem;">
     <!-- Request Form -->
     <div class="panel">
-        <h3><span class="pulse" style="color:var(--warning);">●</span> REQUEST EMERGENCY ACCESS</h3>
-        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;">Dual-authorization required. All
-            access attempts are permanently logged in the forensic trail.</p>
+        <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 0.5rem;">Request Emergency Access</h3>
+        <p style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 1.5rem;">All attempts are permanently
+            recorded. Justification is required for cryptographic roll-back.</p>
 
         <form id="emergency-form">
-            <label class="field-label">TARGET FILE UUID</label>
-            <input type="text" id="target-file-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            <div style="margin-bottom: 1rem;">
+                <label class="field-label">Target File ID</label>
+                <input type="text" id="target-file-id" placeholder="Enter file UUID xxxxxxxx-xxxx..."
+                    style="margin-bottom: 0;">
+            </div>
 
-            <label class="field-label">JUSTIFICATION</label>
-            <textarea id="emergency-reason" placeholder="Provide a detailed reason for emergency access..."
-                rows="5"></textarea>
+            <div style="margin-bottom: 1.5rem;">
+                <label class="field-label">Justification Statement</label>
+                <textarea id="emergency-reason" placeholder="Explain why emergency access is required..."
+                    rows="5"></textarea>
+            </div>
 
-            <button type="submit" class="btn btn-full btn-warning" id="emergency-submit-btn">INITIATE EMERGENCY
-                PROTOCOL</button>
+            <button type="submit" class="btn btn-primary btn-full" id="emergency-submit-btn"
+                style="background: var(--warning); border: none; color: #000; font-weight: 700;">Initiate Protocol
+                Override</button>
         </form>
-        <div id="emergency-form-status" style="margin-top:1rem;text-align:center;font-size:0.8rem;min-height:1.2em;">
+        <div id="emergency-form-status" style="margin-top:1rem; text-align:center; font-size:0.8rem; min-height:1.2em;">
         </div>
     </div>
 
     <!-- Admin Approval Queue -->
     <div class="panel">
-        <h3><span class="pulse" style="color:var(--warning);">●</span> AUTHORIZATION QUEUE</h3>
-        <p style="color:var(--text-dim);margin:.8rem 0 1.5rem;font-size:0.78rem;" id="queue-role-msg">Pending requests
-            awaiting dual-authorization approval.</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <div>
+                <h3 style="color: var(--text-main); font-size: 1rem;">Authorization Queue</h3>
+                <p style="color: var(--text-muted); font-size: 0.75rem;" id="queue-role-msg">Pending requests awaiting
+                    administrative review.</p>
+            </div>
+            <span class="badge badge-warning">Authorization Required</span>
+        </div>
 
-        <div id="emergency-list">
-            <p style="color:var(--text-dim);">Checking queue...</p>
+        <div id="emergency-list" style="display: flex; flex-direction: column; gap: 1rem;">
+            <p style="color:var(--text-dim); text-align: center; padding: 2rem;">Searching authorization queue...</p>
         </div>
     </div>
 </div>
 
 <!-- My Requests -->
-<div class="panel" style="margin-top:0;">
-    <h3>MY REQUEST HISTORY</h3>
-    <div style="overflow-x:auto;margin-top:1rem;">
-        <table class="audit-table">
+<div class="panel">
+    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.25rem;">Your Request History</h3>
+    <div class="table-container">
+        <table class="custom-table">
             <thead>
                 <tr>
-                    <th>FILE</th>
-                    <th>REASON</th>
-                    <th>STATUS</th>
-                    <th>SUBMITTED</th>
-                    <th>EXPIRES</th>
+                    <th>Target Document</th>
+                    <th>Justification</th>
+                    <th>Current Status</th>
+                    <th>Submission Time</th>
+                    <th>Access Window</th>
                 </tr>
             </thead>
             <tbody id="my-requests-body">
                 <tr>
-                    <td colspan="5" style="color:var(--text-dim);text-align:center;padding:2rem;">Loading your request
-                        history...</td>
+                    <td colspan="5" style="color:var(--text-dim); text-align:center; padding:3rem;">Retrieving
+                        historical request log...</td>
                 </tr>
             </tbody>
         </table>

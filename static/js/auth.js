@@ -38,13 +38,24 @@ function logout() {
 })();
 
 async function checkAdminUI() {
+    const isAdmin = localStorage.getItem('is_admin') === 'true' || localStorage.getItem('is_superuser') === 'true';
+    const auditItem = document.getElementById('audit-nav-item');
+
+    if (isAdmin && auditItem) {
+        auditItem.classList.remove('hidden');
+    }
+
+    // Still verify against API to be safe
     const resp = await fetchSecure(API.audit);
     if (resp && resp.ok) {
-        const auditItem = document.getElementById('audit-nav-item');
         if (auditItem) auditItem.classList.remove('hidden');
         localStorage.setItem('is_admin', 'true');
     } else {
-        localStorage.removeItem('is_admin');
+        // Only hide if we explicitly got a 403 or 401
+        if (resp && (resp.status === 403 || resp.status === 401)) {
+            if (auditItem) auditItem.classList.add('hidden');
+            localStorage.removeItem('is_admin');
+        }
     }
 }
 
@@ -66,13 +77,54 @@ async function fetchSecure(url, options = {}) {
         'Authorization': `Bearer ${tokens.access}`
     };
 
-    let resp = await fetch(url, options);
-
-    if (resp.status === 401) {
-        logout();
+    let resp;
+    try {
+        resp = await fetch(url, options);
+    } catch (err) {
+        // Network error — don't logout, just return null silently
+        console.warn('VANGUARD: Network error on', url, err);
         return null;
     }
+
+    if (resp.status === 401) {
+        // Try a token refresh before giving up
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            logout();
+            return null;
+        }
+        // Retry with new token
+        options.headers['Authorization'] = `Bearer ${tokens.access}`;
+        try {
+            resp = await fetch(url, options);
+        } catch (err) {
+            return null;
+        }
+        if (resp.status === 401) {
+            logout();
+            return null;
+        }
+    }
     return resp;
+}
+
+async function tryRefreshToken() {
+    const refresh = localStorage.getItem('refresh_token');
+    if (!refresh) return false;
+    try {
+        const r = await fetch('/api/auth/refresh/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh })
+        });
+        if (r.ok) {
+            const data = await r.json();
+            tokens.access = data.access;
+            localStorage.setItem('access_token', data.access);
+            return true;
+        }
+    } catch (e) { /* silent */ }
+    return false;
 }
 
 /* ---- Secure Viewer Core Logic ---- */
@@ -106,12 +158,12 @@ window.viewFile = async function (id) {
 
         if (contentType.startsWith('image/')) {
             // Secure Image View
-            innerContent = `<img src="${url}" style="max-width:90%; max-height:90%; box-shadow:0 0 50px rgba(0,0,0,0.5); pointer-events:none; user-select:none;">
+            innerContent = `<img src="${url}" style="max-width:90%; max-height:90%; box-shadow:0 0 80px rgba(0,0,0,0.8); pointer-events:none; user-select:none; border-radius: 4px;">
                             <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; background:transparent;"></div>`;
         } else if (contentType.startsWith('text/') || contentType === 'application/json' || contentType === 'application/xml') {
             // Textual View (Logs, code, etc)
             const text = await blob.text();
-            innerContent = `<div style="width:80%; height:80%; background:#111; color:var(--primary-lime); font-family:monospace; padding:2rem; overflow:auto; border:1px solid var(--border-cyan); white-space:pre-wrap; font-size:0.85rem;">${escHtml(text)}</div>`;
+            innerContent = `<div style="width:80%; max-width: 900px; height:80%; background:#111; color:var(--success); font-family: 'JetBrains Mono', monospace; padding:2.5rem; overflow:auto; border:1px solid #333; white-space:pre-wrap; font-size:0.9rem; line-height: 1.6; border-radius: 8px;">${escHtml(text)}</div>`;
         } else if (contentType === 'application/pdf') {
             // PDF View
             innerContent = `<iframe src="${url}#toolbar=0" style="width:100%; height:100%; border:none; background:#fff;" allowfullscreen></iframe>
@@ -128,20 +180,20 @@ window.viewFile = async function (id) {
                 const worksheet = workbook.Sheets[firstSheetName];
                 const html = XLSX.utils.sheet_to_html(worksheet);
                 innerContent = `<div style="width:100%; height:100%; overflow:auto; background:#fff; color:#333; padding:2rem; font-family:sans-serif;">
-                                    <h4 style="color:var(--primary-cyan);margin-bottom:1rem;">PREVIEW: ${firstSheetName}</h4>
+                                    <h4 style="color:var(--primary); margin-bottom:1rem; font-family: 'Outfit', sans-serif;">Sheet Preview: ${firstSheetName}</h4>
                                     ${html}
                                 </div>`;
             } catch (err) {
-                innerContent = `<div style="color:var(--danger);">FAILED TO RENDER SPREADSHEET</div>`;
+                innerContent = `<div style="color:var(--danger); font-weight: 600;">ENCODING ERROR: FAILED TO RENDER SECURE SPREADSHEET</div>`;
             }
         } else {
             // Fallback for unknown types
             innerContent = `
                 <div style="text-align:center; color:white;">
-                    <div style="font-size:4rem; margin-bottom:1rem; opacity:0.3;">⬡</div>
-                    <h3>PREVIEW NOT SUPPORTED</h3>
-                    <p style="color:var(--text-dim); margin-top:0.5rem; font-size:0.85rem;">Mime-Type: ${contentType}</p>
-                    <p style="margin-top:2rem; font-size:0.75rem; color:var(--danger);">⚠ SECURE PROTOCOL: DOWNLOADS ARE RESTRICTED FOR THIS FORMAT.</p>
+                    <div style="font-size:4rem; margin-bottom:1.5rem; opacity:0.3;">📦</div>
+                    <h3 style="font-family: 'Outfit', sans-serif;">PREVIEW NOT SUPPORTED</h3>
+                    <p style="color:var(--text-dim); margin-top:0.5rem; font-size:0.875rem;">Asset Type: ${contentType}</p>
+                    <p style="margin-top:2.5rem; font-size:0.8rem; color:var(--danger); font-weight: 600;">🛡️ DEFENSIVE PROTOCOL: DOWNLOADS ARE RESTRICTED FOR THIS ASSET.</p>
                 </div>
             `;
         }
@@ -150,7 +202,7 @@ window.viewFile = async function (id) {
             ${innerContent}
             <div id="secure-watermark" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:11; pointer-events:none; 
                         display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); 
-                        opacity:0.12; font-size:1.5rem; font-weight:bold; color:var(--primary-cyan); transform:rotate(-30deg); justify-items:center; align-items:center;">
+                        opacity:0.1; font-size:1.2rem; font-weight:600; color:var(--primary); transform:rotate(-25deg); justify-items:center; align-items:center;">
                 ${Array(9).fill(`<div>${username} • ${new Date().toLocaleDateString()}</div>`).join('')}
             </div>
         `;

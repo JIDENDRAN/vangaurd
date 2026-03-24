@@ -2,15 +2,25 @@
 
 let allFiles = [];
 let currentFilter = 'all';
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await fetchUser();
     await loadVault();
 });
 
+async function fetchUser() {
+    const resp = await fetchSecure(API.me);
+    if (resp && resp.ok) {
+        currentUser = await resp.json();
+    }
+}
+
 async function loadVault() {
     const resp = await fetchSecure(API.files);
+    const tbody = document.getElementById('vault-body');
     if (!resp || !resp.ok) {
-        renderVaultBody('<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:2rem;">FAILED TO LOAD VAULT — CHECK CONNECTION</td></tr>');
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:3rem;">FAILED TO LOAD VAULT — CHECK CONNECTION</td></tr>';
         return;
     }
     allFiles = await resp.json();
@@ -29,10 +39,7 @@ function renderVault() {
         if (currentFilter === 'all') {
             matchFilter = true;
         } else if (currentFilter === 'active') {
-            // "Active" includes both active and expired per previous user request
             matchFilter = (effectiveStatus === 'active' || effectiveStatus === 'expired');
-        } else if (currentFilter === 'expired') {
-            matchFilter = (effectiveStatus === 'expired');
         } else {
             matchFilter = (f.status === currentFilter);
         }
@@ -51,45 +58,47 @@ function renderVault() {
     }
     emptyEl?.classList.add('hidden');
 
+    const isAdmin = currentUser && (currentUser.role?.toLowerCase() === 'admin' || currentUser.is_superuser);
+
     tbody.innerHTML = filtered.map(f => {
         const expiry = new Date(f.ttl_expiry);
         const isExpired = expiry < new Date();
         const effectiveStatus = (f.status === 'active' && isExpired) ? 'expired' : f.status;
 
+        const badgeClass = `badge badge-${getStatusType(effectiveStatus)}`;
+
         const expiryStr = isExpired
-            ? `<span style="color:var(--danger);">${expiry.toLocaleString()} ⚠</span>`
+            ? `<span style="color:var(--danger); font-weight: 600;">${expiry.toLocaleString()} ⚠️</span>`
             : expiry.toLocaleString();
 
         const accessInfo = f.access_limit > 0
             ? `${f.access_count} / ${f.access_limit}`
             : `${f.access_count} / ∞`;
 
-        const isAdmin = localStorage.getItem('is_admin') === 'true';
-        let actionButtons = `<button class="btn btn-danger" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="copyId('${escHtml(f.id)}')">⎘ ID</button>`;
+        let actionButtons = `<button class="btn btn-outline" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;" onclick="copyId('${escHtml(f.id)}')">📋 ID</button>`;
 
         if (f.status === 'active' && !isExpired) {
-            actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;" onclick="viewFile('${escHtml(f.id)}')">👁 VIEW</button>` + actionButtons;
+            actionButtons = `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="viewFile('${escHtml(f.id)}')">👁️ VIEW</button>` + actionButtons;
         } else {
-            // Expired or explicitly marked as 'expired'
             if (isAdmin || f.has_emergency_access) {
-                const label = isAdmin ? '👁 VIEW (ADMIN)' : '👁 VIEW (OVERRIDE)';
-                actionButtons = `<button class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--danger);color:var(--danger);" onclick="viewFile('${escHtml(f.id)}')">${label}</button>` + actionButtons;
+                const label = isAdmin ? '👁️ ADMIN VIEW' : '👁️ EMERGENCY VIEW';
+                actionButtons = `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--danger); border: none;" onclick="viewFile('${escHtml(f.id)}')">${label}</button>` + actionButtons;
             } else {
-                actionButtons = `<a href="/emergency/?file_id=${escHtml(f.id)}" class="btn" style="padding:.3rem .7rem;font-size:0.7rem;border-color:var(--warning);color:var(--warning);text-decoration:none;">⚠ EMERGENCY OVERRIDE</a>` + actionButtons;
+                actionButtons = `<a href="/emergency/?file_id=${escHtml(f.id)}" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; color: var(--warning); border-color: var(--warning); text-decoration: none;">🛡️ OVERRIDE</a>` + actionButtons;
             }
         }
 
         return `
-        <tr class="vault-row" data-status="${effectiveStatus}">
+        <tr>
             <td>
-                <strong style="color:var(--primary-cyan);">${escHtml(f.filename)}</strong><br>
-                <span style="font-size:0.65rem;color:var(--text-dim);">${escHtml(f.id)}</span>
+                <div style="font-weight: 600; color: var(--text-main);">${escHtml(f.filename)}</div>
+                <div style="font-size: 0.65rem; color: var(--text-dim); font-family: monospace;">${escHtml(f.id)}</div>
             </td>
-            <td><span class="status-badge status-${effectiveStatus}">${effectiveStatus.toUpperCase()}</span></td>
-            <td style="font-size:0.8rem;">${expiryStr}</td>
-            <td style="font-size:0.8rem;text-align:center;">${accessInfo}</td>
+            <td><span class="${badgeClass}">${effectiveStatus.toUpperCase()}</span></td>
+            <td style="font-size: 0.8rem;">${expiryStr}</td>
+            <td style="font-size: 0.8rem; text-align: center; color: var(--text-muted);">${accessInfo}</td>
             <td>
-                <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+                <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
                     ${actionButtons}
                 </div>
             </td>
@@ -97,17 +106,30 @@ function renderVault() {
     }).join('');
 }
 
-
+function getStatusType(status) {
+    if (status === 'active') return 'success';
+    if (status === 'expired') return 'warning';
+    if (status === 'destroyed') return 'danger';
+    return 'info';
+}
 
 window.copyId = (id) => {
     navigator.clipboard.writeText(id).then(() => {
-        showToast('UUID COPIED TO CLIPBOARD', 'lime');
+        showToast('UUID copied to clipboard', 'info');
     });
 };
 
 window.setFilter = (btn, filter) => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'transparent';
+        b.style.boxShadow = 'none';
+    });
     btn.classList.add('active');
+    btn.style.background = 'white';
+    btn.style.boxShadow = 'var(--shadow-sm)';
+
     currentFilter = filter;
     renderVault();
 };
@@ -115,20 +137,26 @@ window.setFilter = (btn, filter) => {
 window.filterFiles = () => renderVault();
 
 /* ---- Toast Notification ---- */
-function showToast(msg, type = 'cyan') {
-    const colors = { cyan: 'var(--primary-cyan)', lime: 'var(--primary-lime)', danger: 'var(--danger)', warning: 'var(--warning)' };
+function showToast(msg, type = 'info') {
     const toast = document.createElement('div');
+    const color = type === 'danger' ? 'var(--danger)' : 'var(--primary)';
     toast.style.cssText = `
-        position:fixed;bottom:2rem;right:2rem;z-index:9999;
-        background:rgba(5,12,20,0.95);border:1px solid ${colors[type]};
-        color:${colors[type]};padding:.8rem 1.5rem;font-size:.8rem;
-        letter-spacing:1px;border-radius:2px;
-        box-shadow:0 0 20px ${colors[type]}44;
-        animation:fadeInUp .3s ease;
+        position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+        background: white; border-left: 4px solid ${color};
+        color: var(--text-main); padding: 1rem 1.5rem; font-size: 0.875rem;
+        font-weight: 500; border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; align-items: center; gap: 0.75rem;
     `;
-    toast.innerText = msg;
+    toast.innerHTML = `<span>⚡</span> ${msg}`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 function escHtml(s) {

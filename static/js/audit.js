@@ -8,24 +8,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadAuditLogs() {
+    console.log('VANGUARD: AUDIT_TRAIL_FETCH_START');
     const resp = await fetchSecure(API.audit);
     const tbody = document.getElementById('audit-body');
     const restrictedEl = document.getElementById('audit-restricted');
 
-    if (!resp) return;
+    if (!resp) {
+        console.error('VANGUARD: AUDIT_TRAIL_NETWORK_FAIL');
+        return;
+    }
 
     if (!resp.ok) {
-        // Non-admin: hide table, show restricted banner
+        console.warn('VANGUARD: AUDIT_TRAIL_ACCESS_DENIED', resp.status);
         document.getElementById('audit-full-table')?.classList.add('hidden');
         restrictedEl?.classList.remove('hidden');
         return;
     }
 
-    allLogs = await resp.json();
-    if (!Array.isArray(allLogs)) allLogs = [];
-
-    renderStats(allLogs);
-    renderTable(allLogs);
+    try {
+        allLogs = await resp.json();
+        console.log('VANGUARD: AUDIT_TRAIL_FETCH_SUCCESS', allLogs.length);
+        if (!Array.isArray(allLogs)) {
+            console.error('VANGUARD: AUDIT_TRAIL_DATA_INVALID');
+            allLogs = [];
+        }
+        renderStats(allLogs);
+        renderTable(allLogs);
+    } catch (err) {
+        console.error('VANGUARD: AUDIT_TRAIL_PARSE_ERROR', err);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger);">CRITICAL ERROR: FORENSIC DATA PARSE FAIL</td></tr>';
+    }
 }
 
 /* ---- Render Stats Row ---- */
@@ -60,7 +72,7 @@ function renderTable(logs) {
     if (!tbody) return;
 
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-dim);text-align:center;padding:2rem;">[ NO MATCHING RECORDS ]</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-dim); text-align:center; padding:3rem;">No forensic records found matching the current filters.</td></tr>';
         return;
     }
 
@@ -68,32 +80,47 @@ function renderTable(logs) {
         const ts = new Date(log.timestamp);
         const dateStr = ts.toLocaleDateString();
         const timeStr = ts.toLocaleTimeString();
-        const eventClass = eventTypeClass(log.action_type);
-        const badge = eventBadge(log.action_type);
+        const badgeClass = `badge badge-${getEventType(log.action_type)}`;
+        const displayType = log.action_type.replace(/_/g, ' ');
 
         return `
-        <tr class="audit-row" style="border-bottom:1px solid rgba(0,242,255,0.06);">
-            <td style="font-size:0.75rem;white-space:nowrap;">
-                <span style="color:var(--primary-cyan);">${timeStr}</span><br>
-                <span style="color:var(--text-dim);font-size:0.65rem;">${dateStr}</span>
+        <tr>
+            <td style="font-size:0.8rem; white-space:nowrap;">
+                <div style="font-weight: 600; color: var(--text-main);">${timeStr}</div>
+                <div style="color:var(--text-dim); font-size:0.7rem;">${dateStr}</div>
             </td>
-            <td style="font-size:0.80rem;color:var(--primary-cyan);">
+            <td style="font-weight: 500; font-size: 0.875rem; color: var(--primary);">
                 ${escHtml(log.user_username || log.user || '—')}
             </td>
             <td>
-                <span class="status-badge ${eventClass}" style="font-size:0.65rem;">${badge}</span>
+                <span class="${badgeClass}">${displayType}</span>
             </td>
-            <td style="font-size:0.78rem;">${escHtml(log.file_name || log.file || '—')}</td>
-            <td style="font-size:0.72rem;color:var(--text-dim);">${escHtml(log.ip_address || '—')}</td>
-            <td style="font-size:0.78rem;color:var(--text-dim);max-width:280px;">${escHtml(log.details || '—')}</td>
+            <td style="font-weight: 500; font-size: 0.875rem;">${escHtml(log.file_name || log.file || '—')}</td>
+            <td style="font-size:0.75rem; color:var(--text-muted); font-family: monospace;">${escHtml(log.ip_address || '—')}</td>
+            <td style="font-size:0.8rem; color:var(--text-muted); max-width:300px; line-height: 1.4;">${escHtml(log.details || '—')}</td>
         </tr>`;
     }).join('');
 }
 
+function getEventType(type) {
+    if (type.includes('UPLOAD')) return 'success';
+    if (type.includes('DOWNLOAD') || type.includes('VIEW')) return 'primary';
+    if (type.includes('EMERGENCY')) return 'warning';
+    return 'info';
+}
+
 /* ---- Filter Handlers ---- */
 window.setAuditFilter = (btn, type) => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'transparent';
+        b.style.boxShadow = 'none';
+    });
     btn.classList.add('active');
+    btn.style.background = 'white';
+    btn.style.boxShadow = 'var(--shadow-sm)';
+
     activeTypeFilter = type;
     renderTable(allLogs);
 };
@@ -101,32 +128,26 @@ window.setAuditFilter = (btn, type) => {
 window.filterAudit = () => renderTable(allLogs);
 
 /* ---- Helpers ---- */
-function eventTypeClass(type) {
-    if (type.includes('UPLOAD')) return 'event-upload';
-    if (type.includes('DOWNLOAD') || type.includes('VIEW')) return 'event-download';
-    if (type.includes('EMERGENCY')) return 'event-emergency';
-    return 'event-other';
-}
-
-function eventBadge(type) {
-    if (type.includes('UPLOAD')) return type.replace(/_/g, ' ');
-    if (type.includes('DOWNLOAD') || type.includes('VIEW')) return type.replace(/_/g, ' ');
-    if (type.includes('EMERGENCY')) return type.replace(/_/g, ' ');
-    return type.replace(/_/g, ' ');
-}
-
 function animateCount(id, target) {
     const el = document.getElementById(id);
     if (!el) return;
     let current = 0;
-    const step = Math.max(1, Math.ceil(target / 25));
-    const timer = setInterval(() => {
-        current = Math.min(current + step, target);
-        el.textContent = current;
-        if (current >= target) clearInterval(timer);
-    }, 35);
+    const duration = 800;
+    const startTime = performance.now();
+
+    function update(timestamp) {
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        current = progress * target;
+        el.textContent = Math.floor(current).toLocaleString();
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    requestAnimationFrame(update);
 }
 
 function escHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

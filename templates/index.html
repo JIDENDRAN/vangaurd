@@ -4,108 +4,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VANGUARD | Secure Protocol Access</title>
-    <meta name="description" content="VANGUARD — Time-Bound Crypto-Protection System. Login to begin.">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Vanguard | Secure Gateway</title>
+    <meta name="description" content="Vanguard — Secure Data Vault Login.">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260324">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-glow: rgba(37, 99, 235, 0.15);
+        }
+
         body {
+            margin: 0;
+            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            /* Deep slate baseline */
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.1) 0%, transparent 40%),
+                url('/static/img/vanguard_login_bg_1774345886597.png');
+            /* Generated high-tech bg */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+        }
+
+        /* Animated overlay for extra depth */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.01) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+            padding: 1.5rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-radius: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 3rem 2.5rem;
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-v {
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            border-radius: 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+            font-family: 'Outfit', sans-serif;
+            position: relative;
+        }
+
+        .logo-v::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 1.5rem;
+            border: 2px solid var(--primary);
+            opacity: 0.3;
+            animation: pulse 2s infinite;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            color: #1e293b;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .card-subtitle {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* Role Switcher */
+        .role-switcher {
+            display: flex;
+            background: rgba(15, 23, 42, 0.05);
+            padding: 0.4rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            border: 1px solid rgba(15, 23, 42, 0.05);
         }
 
         .role-btn {
-            background: transparent;
-            border: 1px solid var(--border-cyan);
-            color: var(--text-dim);
-            padding: 0.6rem;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
             flex: 1;
+            padding: 0.65rem;
+            border: none;
+            background: transparent;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .role-btn.active#role-admin {
-            background: var(--primary-cyan);
-            color: #000 !important;
-            border-color: var(--primary-cyan);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
-            font-weight: 800;
+        .role-btn.active {
+            color: white;
         }
 
-        .role-btn.active#role-user {
-            background: var(--primary-lime);
-            color: #000 !important;
-            border-color: var(--primary-lime);
-            box-shadow: 0 0 20px rgba(182, 255, 0, 0.6);
-            font-weight: 800;
+        .role-slider {
+            position: absolute;
+            top: 0.4rem;
+            left: 0.4rem;
+            width: calc(50% - 0.4rem);
+            height: calc(100% - 0.8rem);
+            background: #1e293b;
+            border-radius: 0.75rem;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-btn:nth-child(2).active~.role-slider {
+            transform: translateX(100%);
+        }
+
+        /* Input Styling */
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 2.75rem;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.875rem 1.25rem 0.875rem 3rem !important;
+            background: rgba(255, 255, 255, 0.5) !important;
+            border: 1.5px solid rgba(226, 232, 240, 0.8) !important;
+            border-radius: 1rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: #1e293b !important;
+            transition: all 0.3s !important;
+        }
+
+        input:focus {
+            background: white !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+            outline: none !important;
+        }
+
+        input:focus+.input-icon {
+            color: var(--primary);
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-authorize {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-authorize:hover:not(:disabled) {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-authorize:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-authorize:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: #64748b;
+        }
+
+        .error-msg {
+            min-height: 1.5rem;
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #ef4444;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .error-msg.visible {
+            opacity: 1;
+        }
+
+        .footer-info {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+        }
+
+        /* Responsive Mobile Tweak */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 2.5rem 1.75rem;
+                border-radius: 1.5rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="panel login-box">
-        <h1 class="logo" style="text-align:center;margin-bottom:.5rem;">VANGUARD</h1>
-        <p style="text-align:center;color:var(--text-dim);margin-bottom:2rem;font-size:0.75rem;letter-spacing:3px;">
-            SECURE PROTOCOL ACCESS</p>
-        <div style="margin-bottom:1.5rem;">
-            <label class="field-label" style="text-align:center;">PROTOCOL LEVEL</label>
-            <div style="display:flex; gap:0.5rem;">
-                <button type="button" id="role-admin" class="role-btn active" style="flex:1;"
-                    onclick="setLoginRole('admin')">ADMIN</button>
-                <button type="button" id="role-user" class="role-btn" style="flex:1;"
-                    onclick="setLoginRole('user')">USER</button>
+    <div class="scanline"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <div class="logo-v">V</div>
+                <h1 class="card-title">VANGUARD</h1>
+                <p class="card-subtitle">Global Security Provisioning Gateway</p>
+            </div>
+
+            <div class="role-switcher">
+                <div id="role-slider" class="role-slider"></div>
+                <button type="button" id="role-admin" class="role-btn active"
+                    onclick="setLoginRole('admin')">Admin</button>
+                <button type="button" id="role-user" class="role-btn" onclick="setLoginRole('user')">Operator</button>
+            </div>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <label class="field-label">Registry Username</label>
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="username" placeholder="e.g. admin_01" required autocomplete="username">
+                </div>
+
+                <div class="input-group">
+                    <label class="field-label">Hardware Keyphrase</label>
+                    <span class="input-icon">🔑</span>
+                    <input type="password" id="password" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-authorize" id="login-btn">
+                    <span>Authorize Access</span>
+                </button>
+            </form>
+
+            <div id="login-error" class="error-msg">
+                <span id="error-text"></span>
             </div>
         </div>
 
-        <form id="login-form">
-            <input type="text" id="username" placeholder="USERNAME" required autocomplete="username">
-            <input type="password" id="password" placeholder="PASSWORD" required autocomplete="current-password">
-            <button type="submit" class="btn" style="width:100%;" id="login-btn">AUTHORIZE</button>
-        </form>
-        <p id="login-error"
-            style="color:var(--danger);margin-top:1rem;text-align:center;font-size:0.8rem;min-height:1.2em;"></p>
+        <div class="footer-info">
+            &copy; 2026 Vanguard • End-to-End Quantum-Safe Encryption • Secure Session Monitoring Active
+        </div>
     </div>
+
     <script>
-        let currentRole = 'admin';
         const roleCredentials = {
             'admin': { u: 'admin', p: 'admin123' },
             'user': { u: 'operator', p: 'operator123' }
         };
 
-        // Initialize with default role
         window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('access_token')) {
+                window.location.href = '/dashboard/';
+                return;
+            }
             setLoginRole('admin');
         });
 
         window.setLoginRole = function (role) {
-            currentRole = role;
             document.getElementById('role-admin').classList.toggle('active', role === 'admin');
             document.getElementById('role-user').classList.toggle('active', role === 'user');
 
-            // Auto-fill credentials for convenience
             const creds = roleCredentials[role];
             document.getElementById('username').value = creds.u;
             document.getElementById('password').value = creds.p;
         };
 
-        // Redirect if already authenticated
-        if (localStorage.getItem('access_token')) {
-            window.location.href = '/dashboard/';
-        }
         const loginForm = document.getElementById('login-form');
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('login-error');
+            const errorText = document.getElementById('error-text');
             const btn = document.getElementById('login-btn');
 
-            errorEl.innerText = '';
-            btn.innerText = 'VERIFYING...';
+            errorEl.classList.remove('visible');
+            btn.innerHTML = '<span style="display:flex; align-items:center; justify-content:center; gap:8px;"><span class="loader-dot"></span> VERIFYING PROTOCOL...</span>';
             btn.disabled = true;
 
             try {
@@ -114,20 +409,25 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
+
                 if (resp.ok) {
                     const data = await resp.json();
                     localStorage.setItem('access_token', data.access);
                     localStorage.setItem('refresh_token', data.refresh);
                     localStorage.setItem('username', username);
-                    window.location.href = '/dashboard/';
+                    localStorage.setItem('is_admin', data.is_admin);
+
+                    // Small delay for UX feel
+                    setTimeout(() => {
+                        window.location.href = '/dashboard/';
+                    }, 600);
                 } else {
-                    errorEl.innerText = 'AUTHORIZATION FAILED: INVALID CREDENTIALS';
-                    btn.innerText = 'AUTHORIZE';
-                    btn.disabled = false;
+                    throw new Error('IDENTITY VERIFICATION FAILED: ACCESS DENIED');
                 }
             } catch (err) {
-                errorEl.innerText = 'COMMUNICATION ERROR: SYSTEM OFFLINE';
-                btn.innerText = 'AUTHORIZE';
+                errorText.innerText = err.message || 'SYSTEM ERROR: CONNECTION INTERRUPTED';
+                errorEl.classList.add('visible');
+                btn.innerHTML = '<span>Authorize Access</span>';
                 btn.disabled = false;
             }
         });

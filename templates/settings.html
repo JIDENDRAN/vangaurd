@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Settings | Vanguard{% endblock %}
+{% block breadcrumb %}System Settings{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 0.25rem;">System Configuration</h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem;">Manage global security parameters and notification
+        preferences.</p>
+</div>
+
+<div class="grid" style="grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
+    <div class="panel" style="padding: 2rem;">
+        <h2 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Vanguard Protocol Options</h2>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div>
+                <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.25rem;">Cloud Storage (AWS S3)
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Offload encrypted
+                    payloads to high-availability S3 buckets.</div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-outline active">Disabled</button>
+                    <button class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);">Enable
+                        S3</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+                <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.25rem;">Notification Alerts
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-muted);">Email alerts for document expiration and
+                    emergency requests.</div>
+                <div style="margin-top: 1rem;">
+                    <button class="btn btn-outline"
+                        style="border-color: var(--secondary); color: var(--secondary);">Configure SMTP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" style="padding: 2rem;">
+        <h2 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Danger Zone</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;">Critical security actions that
+            affect the entire vault infrastructure.</p>
+        <button class="btn btn-danger" style="width: 100%; padding: 1rem;">Purge All Forensic Logs</button>
+        <button class="btn btn-danger" style="width: 100%; padding: 1rem; margin-top: 1rem; opacity: 0.7;">Initialize
+            Vault Destruction (Kill-switch)</button>
+    </div>
+</div>
+{% endblock %}
